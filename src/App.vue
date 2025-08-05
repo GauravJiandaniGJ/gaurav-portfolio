@@ -24,7 +24,7 @@ watch(isDarkModeOn, updateHtmlDarkMode, { immediate: true })
     <SideNavbar :drawer="sidebarOpen" @close-drawer="sidebarOpen = false" />
     <TopNav @drawer="toggleSidebar" />
     <main class="flex-1 pt-16 bg-white dark:bg-[#292828] min-h-screen">
-      <div class="container mx-auto px-0 py-10">
+      <div class="container mx-auto p-5">
         <router-view />
       </div>
     </main>

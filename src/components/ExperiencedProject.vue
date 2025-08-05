@@ -89,4 +89,9 @@ defineProps({
         border-radius: 7px;
     }
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

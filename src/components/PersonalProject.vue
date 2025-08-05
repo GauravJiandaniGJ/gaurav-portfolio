@@ -33,4 +33,9 @@ defineProps({
 .pointer {
     cursor: pointer;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

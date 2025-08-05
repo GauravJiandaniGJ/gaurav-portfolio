@@ -25,11 +25,11 @@ function closeModal () {
 </script>
 
 <template>
-  <div class="w-full min-h-screen bg-white dark:bg-[#1f1f1f] flex justify-center items-start">
+  <div class="w-full min-h-screen bg-white dark:bg-[#292828] flex justify-center items-start">
     <div class="w-full max-w-3xl mx-auto py-4 sm:py-8 px-5 sm:px-4">
       <!-- Back Button -->
       <button @click="goBack"
-        class="mb-5 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-700 dark:text-gray-200 font-medium hover:bg-blue-100 dark:hover:bg-blue-900 transition flex items-center shadow text-sm sm:text-base">
+        class="mb-5 px-3 py-2 bg-gray-100 dark:bg-gray-500 rounded-lg text-gray-700 dark:text-gray-200 font-medium hover:bg-blue-100 dark:hover:bg-blue-900 transition flex items-center shadow text-sm sm:text-base">
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
@@ -137,4 +137,9 @@ function closeModal () {
     max-height: 60vh !important;
   }
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

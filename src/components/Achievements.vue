@@ -81,4 +81,9 @@ const iconSize = 20
 .animate-fadeIn {
   animation: fadeIn 0.45s cubic-bezier(0.45,1.5,0.4,1);
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

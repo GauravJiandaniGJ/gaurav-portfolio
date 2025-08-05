@@ -188,4 +188,9 @@ onUnmounted(() => {
 .animate-fade-in {
   animation: fade-in 0.6s cubic-bezier(0.6, 1.5, 0.3, 1.05) both;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

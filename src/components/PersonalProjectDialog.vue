@@ -77,4 +77,9 @@ const fullUrl = computed(() => {
 .fade-leave-to {
     opacity: 0;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

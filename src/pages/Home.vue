@@ -1,5 +1,6 @@
 <template>
-  <div class="w-full flex flex-col gap-6 sm:gap-10 max-w-[97vw] mx-auto">
+  <div class="w-full flex flex-col gap-5 sm:gap-5 max-w-[100vw] mx-auto scroll-smooth">
+
     <!-- EXPERIENCES -->
     <section id="experiences" class="px-2 sm:px-3 md:px-5">
       <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 text-blue-600 text-center">
@@ -19,31 +20,41 @@
 
     <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
 
-<!-- LIVE PROJECTS (replace just this section) -->
-<section id="projects" class="px-2 sm:px-3 md:px-5">
-  <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 text-blue-600 text-center">
-    Live Projects
-  </h2>
-  <h3 class="subtitle text-xs sm:text-sm font-semibold mb-4 sm:mb-6 text-gray-600 dark:text-gray-300 text-center">
-    Click the buttons below
-  </h3>
-  <div class="flex flex-col gap-3 sm:gap-6 w-full max-w-lg mx-auto">
-    <div v-for="project in personalProjects" :key="project.id"
-      class="bg-blue-950/90 dark:bg-blue-900/70 border border-blue-700 rounded-xl p-3 sm:p-3 flex flex-col items-center text-center hover:shadow-xl hover:scale-[1.01] transition-all duration-200 relative overflow-hidden group custom-project-card">
-      <div class="font-semibold text-base xs:text-lg sm:text-xl mb-1 text-gray-100 dark:text-white">
-        {{ project.title }}
+    <!-- LIVE PROJECTS -->
+    <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
+      <h2 class="text-2xl md:text-3xl font-bold mb-2 text-blue-600 text-center w-full">
+        Live Projects
+      </h2>
+      <h3 class="subtitle text-sm font-semibold mb-5 text-gray-400 dark:text-gray-300 text-center w-full">
+        Click the cards to view details
+      </h3>
+      <div class="w-full flex flex-row justify-center gap-8 flex-wrap">
+        <div v-for="project in personalProjects" :key="project.id"
+          class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-blue-900 border border-blue-700 rounded-lg px-10 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
+          @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })"
+          style="margin-bottom: 0.5rem;">
+          <!-- Ripple animation circle -->
+          <span class="absolute inset-0 rounded-2xl pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
+          <!-- Shine effect on hover -->
+          <span class="shine"></span>
+          <!-- SVG: Only visible on hover -->
+          <span class="absolute top-4 right-5 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            style="pointer-events:none;">
+            <svg class="w-3 h-3 text-white drop-shadow" aria-hidden="true" fill="none" viewBox="0 0 18 18">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 11v4.833A1.166 1.166 0 0 1 13.833 17H2.167A1.167 1.167 0 0 1 1 15.833V4.167A1.166 1.166 0 0 1 2.167 3h4.618m4.447-2H17v5.768M9.111 8.889l7.778-7.778" />
+            </svg>
+          </span>
+          <!-- Card content -->
+          <div class="font-semibold text-xl mb-2 text-white z-10 transition-all duration-300 group-hover:tracking-widest group-hover:text-blue-300">
+            {{ project.title }}
+          </div>
+          <div class="mb-2 text-base font-medium text-gray-300 z-10 transition-all duration-300 group-hover:text-blue-100">
+            Technology: <span class="font-semibold">{{ project.technology }}</span>
+          </div>
+        </div>
       </div>
-      <div class="mb-2 text-xs xs:text-sm sm:text-base font-medium text-gray-300">
-        Technology: <span class="font-semibold text-white">{{ project.technology }}</span>
-      </div>
-      <a :href="project.url" target="_blank"
-        class="mt-2 px-4 py-1.5 rounded-lg bg-blue-600 dark:bg-white text-white dark:text-black font-semibold shadow hover:bg-blue-700 dark:hover:bg-blue-200 transition text-xs xs:text-sm sm:text-base w-24">
-        View
-      </a>
-    </div>
-  </div>
-</section>
-
+    </section>
 
     <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
 
@@ -52,7 +63,6 @@
       <div ref="parallaxRef"
         class="relative overflow-hidden rounded-2xl min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-xl parallax-section ripple-container"
         @mouseenter="createRipple($event)">
-        <!-- Parallax image -->
         <div class="absolute inset-0 w-full h-full z-0 parallax-img" :style="{
           backgroundImage: `url('/static/parallax_dark2.jpg')`,
           backgroundSize: 'cover',
@@ -60,13 +70,9 @@
           backgroundAttachment: 'fixed',
           transform: `translateY(${parallaxOffset}px)`
         }"></div>
-        <!-- Soft dark overlay like Vuetify (not fully black) -->
         <div class="absolute inset-0 bg-black/40 z-10"></div>
-        <!-- Centered quote (content) -->
-        <div
-          class="relative z-20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[300px] md:min-h-[500px]">
-          <span
-            class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-lg text-yellow-400 px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
+        <div class="relative z-20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[300px] md:min-h-[500px]">
+          <span class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-lg text-yellow-400 px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
             Developer by Day and Designer by Night
           </span>
         </div>
@@ -101,29 +107,23 @@
       <Rating />
     </section>
 
-    <!-- Project Drawer -->
+    <!-- Project Drawer (leave as is if you use it for other purpose) -->
     <PersonalProjectDialog :isDrawerOpen="isDrawerOpen" :project="personalProjectObject"
       @close-drawer="isDrawerOpen = false" />
   </div>
 </template>
 
-<!-- script and style remain the same as yours -->
-
-
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import ExperiencedProject from '@/components/ExperiencedProject.vue'
 import PersonalProjectDialog from '@/components/PersonalProjectDialog.vue'
 import Timeline from '@/components/Timeline.vue'
 import Achievements from '@/components/Achievements.vue'
 import Rating from '@/components/Rating.vue'
-
-// Data for projects
-const isDrawerOpen = ref(false)
-const personalProjectObject = ref({ id: 0, title: '', url: '', description: [], images: [] })
-
 import projects from '@/data/projects'
 
+const isDrawerOpen = ref(false)
+const personalProjectObject = ref({ id: 0, title: '', url: '', description: [], images: [] })
 
 const personalProjects = [
   {
@@ -162,8 +162,6 @@ const personalProjects = [
   }
 ]
 
-
-
 // Ripple effect for cards
 function createRipple (event) {
   const card = event.currentTarget
@@ -187,58 +185,8 @@ function createRipple (event) {
   color: #ffffff;
 }
 
-.v-card {
-  border-radius: 15px;
-}
-
-.card-wrapper {
-  position: relative;
-  overflow: hidden;
-  border-radius: 15px;
-  /* Match this to your card's border-radius */
-}
-
-.ripple-container {
-  position: relative;
-  overflow: hidden;
-}
-
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(0);
-  pointer-events: none;
-}
-
-.font-weight-bold {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-.rounded-parallax {
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.project-card,
-.hover-effect {
-  margin-bottom: 0px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-  overflow: hidden;
-  border-radius: 15px;
-}
-
-.project-card:hover,
-.hover-effect:hover {
-  transform: translateY(-5px);
-  box-shadow: none;
-  /* Remove this if you don't want any shadow on hover */
-  outline: none;
-  /* Remove any outline on hover */
+html {
+  scroll-behavior: smooth;
 }
 
 .ripple {
@@ -260,59 +208,47 @@ function createRipple (event) {
   }
 }
 
-@media (max-width: 600px) {
+.live-project-card {
+  position: relative;
+  overflow: hidden;
+}
 
-  .project-card,
-  .hover-effect,
-  .ripple-container {
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 90%;
+.live-project-card .shine {
+  position: absolute;
+  top: -70%;
+  left: -60%;
+  width: 200%;
+  height: 230%;
+  background: linear-gradient(120deg, transparent 60%, rgba(255, 255, 255, 0.20) 75%, transparent 90%);
+  opacity: 0.0;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.45s;
+}
+
+.live-project-card:hover .shine {
+  opacity: 1;
+  animation: shineMove 0.9s cubic-bezier(.57, -0.06, .62, 1.15);
+}
+
+@keyframes shineMove {
+  0% {
+    transform: translateX(-60%) skewX(-16deg);
+    opacity: 0.10;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  85% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateX(60%) skewX(-16deg);
+    opacity: 0;
   }
 }
 
-/* Live Projects - Card Custom Responsive Styling */
-.custom-project-card {
-  box-sizing: border-box;
-  margin-bottom: 0.5rem;
+.live-project-card svg {
+  filter: drop-shadow(0 1px 4px #000a);
 }
-@media (max-width: 600px) {
-  .custom-project-card {
-    padding: 0.9rem 0.6rem;
-    border-radius: 16px;
-    font-size: 15px;
-    margin-bottom: 0.8rem;
-    min-width: 0;
-    box-shadow: 0 3px 12px 0 rgba(15, 23, 42, 0.15);
-  }
-  .custom-project-card .font-bold {
-    font-size: 1.06rem;
-    margin-bottom: 0.4rem;
-  }
-  .custom-project-card .mb-2 {
-    margin-bottom: 0.35rem !important;
-  }
-  .custom-project-card a {
-    width: 85px !important;
-    font-size: 0.92rem !important;
-    padding-top: 0.33rem !important;
-    padding-bottom: 0.33rem !important;
-    padding-left: 0.6rem !important;
-    padding-right: 0.6rem !important;
-  }
-}
-@media (max-width: 370px) {
-  .custom-project-card {
-    padding: 0.5rem 0.25rem;
-    border-radius: 10px;
-  }
-  .custom-project-card a {
-    width: 70px !important;
-    font-size: 0.84rem !important;
-    padding-top: 0.22rem !important;
-    padding-bottom: 0.22rem !important;
-  }
-}
-
-
 </style>

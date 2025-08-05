@@ -229,4 +229,9 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
   .w-20, .sm\:w-28 { width: 55px !important; height: 55px !important; }
   .font-bold.text-base { font-size: 16px !important; }
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
 </style>

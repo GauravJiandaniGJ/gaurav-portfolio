@@ -76,11 +76,11 @@ function scrollToSection (sectionId) {
 
                 <!-- Desktop Nav Items -->
                 <div class="hidden md:flex items-center space-x-0.5 sm:space-x-1 ml-2 sm:ml-6">
-                    <button v-for="item in navItems" :key="item.text" @click="scrollToSection(item.section)" class="relative group px-2 sm:px-3 py-0 font-semibold text-xs sm:text-base rounded-md transition-all duration-200
+                    <button v-for="item in navItems" :key="item.text" @click="scrollToSection(item.section)" class="relative group px-2 sm:px-3 py-0 font-semibold text-xs sm:text-base transition-all duration-400
                         text-blue-600 dark:text-white hover:text-black dark:hover:text-white focus:outline-none">
                         <span>{{ item.text }}</span>
-                        <span class="absolute left-1/2 -bottom-1 w-0 group-hover:w-2/3 transition-all duration-300
-                            border-b-2 border-blue-600 dark:border-blue-400 rounded-md"
+                        <span class="absolute left-1/2 -bottom-1 w-0 group-hover:w-2/3 transition-all duration-400
+                            border-b-2 border-blue-600 "
                             style="transform: translateX(-50%);"></span>
                     </button>
                 </div>
@@ -146,4 +146,8 @@ function scrollToSection (sectionId) {
 .fade-leave-from {
     opacity: 1;
 }
+html {
+  scroll-behavior: smooth;
+}
+
 </style>
