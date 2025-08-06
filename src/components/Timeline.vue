@@ -37,7 +37,7 @@ const timelineItems = [
 
 <template>
   <div
-    class="mx-auto max-w-full sm:max-w-md bg-gray-200 dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden transform transition-all duration-500"
+    class="mx-auto max-w-full sm:max-w-md bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transform transition-all duration-500"
     :class="{ 'scale-100 opacity-100': isVisible, 'scale-95 opacity-0': !isVisible }">
     <!-- Header -->
     <div class="relative transition-all duration-700"
@@ -95,7 +95,7 @@ const timelineItems = [
         <!-- Items -->
         <div class="space-y-4 sm:space-y-6">
           <div v-for="(item, i) in timelineItems" :key="i"
-            class="relative flex items-start transition-all duration-500 hover:translate-x-0.5 hover:scale-[1.02] cursor-pointer group"
+            class="relative flex items-start transition-all duration-500 hover:translate-x-0.5 hover:scale-[1] cursor-pointer group"
             :class="{ 'translate-y-0 opacity-100': isVisible, 'translate-y-8 opacity-0': !isVisible }"
             :style="{ transitionDelay: `${0.5 + i * 100}ms` }">
             <!-- Dot -->
@@ -116,18 +116,18 @@ const timelineItems = [
               </div>
               <!-- Connecting line animation -->
               <div
-                class="absolute top-2 sm:top-3 left-5 sm:left-6 w-2 h-0.5 bg-gray-200 dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
+                class="absolute top-2 sm:top-2.5 left-5 sm:left-6 w-2 h-0.5 bg-gray-200 dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
               </div>
             </div>
             <!-- Content -->
             <div class="ml-3 sm:ml-4 flex-1 min-w-0 transition-all duration-500 group-hover:translate-x-2">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center justify-between gap-2 min-w-0">
                 <h4
-                  class="text-[15px] sm:text-base font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                  class="text-[15px] sm:text-base font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-[65vw] sm:max-w-[22vw] lg:max-w-[24vw]">
                   {{ item.title }}
                 </h4>
                 <span
-                  class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-0 group-hover:scale-110 group-hover:text-blue-500">
+                  class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 sm:mt-0 group-hover:scale-110 group-hover:text-blue-500 whitespace-nowrap text-right pl-2">
                   {{ item.date }}
                 </span>
               </div>

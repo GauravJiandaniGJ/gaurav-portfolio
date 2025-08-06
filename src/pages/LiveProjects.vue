@@ -69,54 +69,54 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
 </script>
 
 <template>
-    <div class="w-full min-h-screen bg-gradient-to-br from-slate-100 dark:from-[#292828] flex flex-col items-center py-2 sm:py-4 px-1 sm:px-0">
-        <div class="w-full max-w-3xl mx-auto">
+    <div class="w-full min-h-screen bg-white dark:bg-[#292828] flex flex-col items-center py-4 sm:py-8 px-1 sm:px-0">
+        <div class="w-full max-w-6xl mx-auto">
             <!-- Back Button -->
             <button @click="goBack"
-                class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-200 font-semibold shadow-md hover:bg-blue-100 dark:hover:bg-blue-900 transition mb-6 mt-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                class="flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-600 dark:bg-blue-900 text-white font-semibold shadow-md hover:bg-blue-700 dark:hover:bg-blue-800 transition mb-8 mt-2 text-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
                 Back
             </button>
 
             <div v-if="project"
-                class="w-full bg-white dark:bg-[#22223a] rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fadeIn">
+                class="w-full bg-gray-200 dark:bg-gray-700 rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fadeIn scale-100 md:scale-105 md:hover:scale-105 transition-transform duration-400">
                 <!-- Image Gallery -->
                 <div
-                    class="w-full md:w-1/2 flex flex-col items-center justify-center bg-gradient-to-b from-blue-900/90 to-blue-800/60 p-4 md:p-6 gap-3 md:gap-4">
+                    class="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-500 dark:bg-gray-800 p-10 md:p-10 gap-5 md:gap-10">
                     <div v-if="project.images && project.images.length"
-                        class="flex flex-wrap justify-center gap-3 w-full">
+                        class="flex flex-col gap-6 w-full items-center">
                         <img v-for="img in project.images" :key="img.id"
                             :src="img.src.startsWith('/static/') ? img.src : '/static/' + img.src.replace(/^\/+/, '')"
                             :alt="project.title + ' screenshot ' + img.id"
-                            class="w-32 h-20 sm:w-40 sm:h-28 md:w-44 md:h-32 lg:w-56 lg:h-40 object-cover rounded-lg shadow-md hover:scale-105 transition-all duration-300 cursor-pointer"
+                            class="w-[220px] h-[150px] sm:w-[320px] sm:h-[200px] md:w-[340px] md:h-[220px] lg:w-[490px] lg:h-[220px] object-cover rounded-lg shadow-xl hover:scale-[1.045] hover:-rotate-1 transition-all duration-300 cursor-pointer"
                             loading="lazy" @click="openZoom(img)" />
                     </div>
                 </div>
-                <!-- Project Info (center everything!) -->
+                <!-- Project Info -->
                 <div
-                    class="flex flex-col items-center justify-center md:w-1/2 w-full px-5 sm:px-7 py-7 md:py-0 md:pl-7 md:pr-8 text-center">
+                    class="flex flex-col items-center md:w-1/2 w-full px-6 sm:px-12 py-10 text-center">
                     <h1
-                        class="text-2xl sm:text-3xl font-bold mb-3 text-blue-700 dark:text-blue-300 leading-tight tracking-tight">
+                        class="text-3xl sm:text-4xl lg:text-4xl font-extrabold mb-4 text-blue-300 dark:text-blue-600 leading-tight tracking-tight drop-shadow">
                         {{ project.title }}
                     </h1>
-                    <div class="text-base sm:text-lg text-gray-700 dark:text-gray-200 mb-3 font-semibold">
-                        <span class="text-blue-600 dark:text-blue-400">Technology:</span>
-                        <span class="ml-2">{{ project.technology }}</span>
+                    <div class="text-lg sm:text-xl lg:text-2xl text-blue-200 dark:text-blue-400 mb-5 font-semibold">
+                        <span class="text-blue-400 dark:text-blue-200">Technology:</span>
+                        <span class="ml-2 text-gray-600 dark:text-white">{{ project.technology }}</span>
                     </div>
                     <ul
-                        class="list-disc pl-5 sm:pl-6 text-sm sm:text-base text-gray-800 dark:text-gray-200 mb-5 mt-2 space-y-1 w-full max-w-xl mx-auto text-left">
+                        class="list-disc pl-7 sm:pl-10 text-base sm:text-lg lg:text-lg text-blue-500 dark:text-gray-200 mb-8 mt-2 space-y-3 w-full max-w-2xl mx-auto text-left">
                         <li v-for="desc in project.description" :key="desc.id">
                             {{ desc.content }}
                         </li>
                     </ul>
                     <a v-if="project.url"
                         :href="project.url.startsWith('http') ? project.url : 'https://' + project.url"
-                        class="inline-flex items-center px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold shadow-lg hover:bg-blue-700 transition text-base mt-2"
+                        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition-all text-md mt-5"
                         target="_blank" rel="noopener">
                         Visit Project
-                        <svg class="w-4 h-4 ml-2" aria-hidden="true" fill="none" viewBox="0 0 18 18">
+                        <svg class="w-3 h-3 ml-2" aria-hidden="true" fill="none" viewBox="0 0 18 18">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                                 stroke-width="2"
                                 d="M15 11v4.833A1.166 1.166 0 0 1 13.833 17H2.167A1.167 1.167 0 0 1 1 15.833V4.167A1.166 1.166 0 0 1 2.167 3h4.618m4.447-2H17v5.768M9.111 8.889l7.778-7.778" />
@@ -136,13 +136,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
                 @click.self="closeZoom">
                 <img :src="zoomedImg.src.startsWith('/static/') ? zoomedImg.src : '/static/' + zoomedImg.src.replace(/^\/+/, '')"
                     :alt="zoomedImg.id"
-                    class="max-h-[90vh] max-w-[98vw] object-contain rounded-xl shadow-2xl border-4 border-white"
+                    class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border-4 border-white"
                     @click.stop />
-                <button @click="closeZoom"
-                    class="absolute top-2 right-5 text-4xl text-white bg-black/60 hover:bg-black/90 rounded-full px-3 py-0.5 z-50"
-                    style="box-shadow: 0 4px 30px rgba(0,0,0,0.3)">
-                    &times;
-                </button>
             </div>
         </transition>
     </div>

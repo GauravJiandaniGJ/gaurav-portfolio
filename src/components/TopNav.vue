@@ -31,7 +31,7 @@ function scrollToSection (sectionId) {
             <!-- LEFT: Sidebar Toggle, Logo, Brand -->
             <div class="flex items-center space-x-2 flex-shrink-0">
                 <button
-                    class="inline-flex items-center justify-center rounded-md p-1 sm:p-2 transition hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none"
+                    class="inline-flex items-center justify-center rounded-lg p-1 sm:p-2 transition hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none"
                     @click="$emit('drawer')" aria-label="Open sidebar">
                     <svg class="w-5 h-5 sm:w-7 sm:h-7 text-blue-600 dark:text-white" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -87,7 +87,7 @@ function scrollToSection (sectionId) {
 
                 <!-- Mobile: Right Arrow Toggle (Chevron) -->
                 <button @click="mobileOpen = !mobileOpen"
-                    class="inline-flex md:hidden items-center justify-center rounded-md p-1 ml-1 sm:p-2 sm:ml-2 transition hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none"
+                    class="inline-flex md:hidden items-center justify-center rounded-lg p-1 ml-1 sm:p-2 sm:ml-2 transition hover:bg-blue-50 dark:hover:bg-gray-700 focus:outline-none"
                     :aria-expanded="mobileOpen" aria-label="Open main menu">
                     <svg :class="[
                         'w-5 h-5 sm:w-7 sm:h-7 transition-transform duration-300',

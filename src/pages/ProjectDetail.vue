@@ -26,7 +26,7 @@ function closeModal () {
 
 <template>
   <div class="w-full min-h-screen bg-white dark:bg-[#292828] flex justify-center items-start">
-    <div class="w-full max-w-3xl mx-auto py-4 sm:py-8 px-5 sm:px-4">
+    <div class="w-full max-w-3xl mx-auto">
       <!-- Back Button -->
       <button @click="goBack"
         class="mb-5 px-3 py-2 bg-gray-100 dark:bg-gray-500 rounded-lg text-gray-700 dark:text-gray-200 font-medium hover:bg-blue-100 dark:hover:bg-blue-900 transition flex items-center shadow text-sm sm:text-base">
@@ -40,7 +40,7 @@ function closeModal () {
         <!-- Title & Logo -->
         <div class="flex items-center gap-2 sm:gap-6 mb-4 flex-wrap sm:flex-nowrap">
           <img v-if="project.logo" :src="project.logo"
-            class="w-12 h-12 sm:w-20 sm:h-20 rounded-xl object-contain border bg-white dark:bg-[#191919] shadow flex-shrink-0" />
+            class="w-12 h-12 sm:w-20 sm:h-20 rounded-lg object-contain border bg-white dark:bg-[#191919] shadow flex-shrink-0" />
           <div>
             <h1 class="text-lg xs:text-xl sm:text-3xl md:text-4xl font-bold text-blue-700 dark:text-blue-300 leading-tight drop-shadow-sm">
               {{ project.title }}
@@ -80,7 +80,7 @@ function closeModal () {
         <!-- Project Link -->
         <div v-if="project.url" class="mt-8">
           <a :href="project.url.startsWith('http') ? project.url : 'https://' + project.url"
-            class="inline-block px-5 py-2 rounded-xl bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition text-base xs:text-lg"
+            class="inline-block px-5 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition text-base xs:text-lg"
             target="_blank" rel="noopener">
             Visit Project
           </a>
@@ -95,14 +95,14 @@ function closeModal () {
         <div v-if="showModal"
           class="fixed z-50 inset-0 flex items-center justify-center bg-black/80 backdrop-blur-md transition-all duration-300"
           @click.self="closeModal">
-          <div class="relative w-auto mx-auto p-2 xs:p-4 sm:p-8 animate-modalZoom flex items-center justify-center">
+          <div class="relative w-auto mx-auto animate-modalZoom flex items-center justify-center">
             <!-- Image only (no close button) -->
             <img
               :src="modalImg"
               alt="Project Screenshot"
-              class="rounded-xl object-contain transition-all duration-500
-                max-w-[95vw] max-h-[60vh]
-                sm:max-w-[80vw] sm:max-h-[75vh]"
+              class="rounded-lg object-contain transition-all duration-500
+                max-w-[100vw] max-h-[90vh]
+                sm:max-w-[100vw] sm:max-h-[90vh]"
             />
           </div>
         </div>

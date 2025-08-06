@@ -11,7 +11,7 @@
       </h3>
       <div class="grid gap-10 sm:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full">
         <ExperiencedProject v-for="project in projects" :key="project.id" :project="project"
-          class="hover:shadow-2xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-2xl group"
+          class="hover:shadow-2xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-lg group"
           @mouseenter="createRipple($event)">
           <span class="ripple"></span>
         </ExperiencedProject>
@@ -34,7 +34,7 @@
           @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })"
           style="margin-bottom: 0.5rem;">
           <!-- Ripple animation circle -->
-          <span class="absolute inset-0 rounded-2xl pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
+          <span class="absolute inset-0 rounded-lg pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
           <!-- Shine effect on hover -->
           <span class="shine"></span>
           <!-- SVG: Only visible on hover -->
@@ -61,7 +61,7 @@
     <!-- PARALLAX / QUOTE SECTION -->
     <section class="px-2 sm:px-3 md:px-5">
       <div ref="parallaxRef"
-        class="relative overflow-hidden rounded-2xl min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-xl parallax-section ripple-container"
+        class="relative overflow-hidden rounded-lg min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-xl parallax-section ripple-container"
         @mouseenter="createRipple($event)">
         <div class="absolute inset-0 w-full h-full z-0 parallax-img" :style="{
           backgroundImage: `url('/static/parallax_dark2.jpg')`,
