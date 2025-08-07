@@ -3,7 +3,11 @@ export default [
         id: 1,
         title: 'WPD',
         url: 'https://apps.shopify.com/wholesale-pricing-discount',
-        technology: 'Laravel, Redis, and React',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'Redis', logo: '/static/Redis.png' },
+            { name: 'React', logo: '/static/React.png' }
+        ],
         productSite: 'E-commerce',
         reference: 'Seth Gold',
         description: [
@@ -22,7 +26,11 @@ export default [
         id: 2,
         title: 'Vebcommerce',
         url: 'https://www.vebcommerce.com',
-        technology: 'Lumen, Django & VueJS',
+        technology: [
+            { name: 'Lumen', logo: '/static/Lumen.png' },
+            { name: 'Django', logo: '/static/django.svg' },
+            { name: 'VueJS', logo: '/static/Vue.png' }
+        ],
         productSite: 'E-commerce',
         reference: 'Harshit Makhija',
         description: [
@@ -41,7 +49,11 @@ export default [
         id: 3,
         title: 'AReceivables',
         url: 'https://www.areceivables.com',
-        technology: 'Laravel, Vue, and Digital Ocean',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'Vue', logo: '/static/Vue.png' },
+            { name: 'Digital Ocean', logo: '/static/DigitalOcean.png' }
+        ],
         productSite: 'Fintech',
         reference: 'Seth Gold',
         description: [
@@ -60,7 +72,11 @@ export default [
     {
         id: 4,
         title: 'ProjectX',
-        technology: 'Rasa (NLU, Artificial Intelligence), Basic Python, Django',
+        technology: [
+            { name: 'Rasa', logo: '/static/Rasa.jpg' },
+            { name: 'Python', logo: '/static/Python.png' },
+            { name: 'Django', logo: '/static/django.svg' }
+        ],
         productSite: 'AI-ML',
         reference: 'Praveen Penumaka',
         description: [
@@ -78,7 +94,10 @@ export default [
         id: 5,
         title: 'Repsorder',
         url: 'https://www.salesreporderform.com',
-        technology: 'Laravel and JQuery',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'jQuery', logo: '/static/jQuery.png' }
+        ],
         productSite: 'Fintech',
         reference: 'Seth Gold',
         description: [
@@ -95,7 +114,13 @@ export default [
     {
         id: 6,
         title: 'SAR Contractor',
-        technology: 'Vue, Laravel, Zend, Selenium, and Vagrant',
+        technology: [
+            { name: 'Vue', logo: '/static/Vue.png' },
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'Zend', logo: '/static/Zend.png' },
+            { name: 'Selenium', logo: '/static/Selenium.png' },
+            { name: 'Vagrant', logo: '/static/Vagrant.png' }
+        ],
         productSite: 'Fintech',
         reference: 'Nick Hoffman, Ankit Sharma',
         description: [
@@ -115,7 +140,9 @@ export default [
         title: 'ClearGlass',
         url: 'https://www.clearglass.com',
         reference: 'Ritesh Singhania',
-        technology: 'Laravel',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' }
+        ],
         productSite: 'Fintech',
         description: [
             { id: 1, content: 'Developed heavy-lifting backend part of core-product ClearGlass Analytics right from it\'s foundation in Laravel technology.' },
@@ -133,7 +160,10 @@ export default [
         id: 8,
         title: 'Plexus MD',
         url: 'https://www.plexusmd.com',
-        technology: 'React and Redux',
+        technology: [
+            { name: 'React', logo: '/static/React.png' },
+            { name: 'Redux', logo: '/static/Redux.png' }
+        ],
         reference: 'Kinnar Shah',
         productSite: 'Healthtech / Digital Health',
         description: [
@@ -150,7 +180,9 @@ export default [
     {
         id: 9,
         title: 'ClaritEx',
-        technology: 'Angular',
+        technology: [
+            { name: 'Angular', logo: '/static/Angular.png' }
+        ],
         reference: 'Ritesh Singhania',
         productSite: 'Data Analytics',
         description: [

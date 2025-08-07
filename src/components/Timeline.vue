@@ -37,7 +37,7 @@ const timelineItems = [
 
 <template>
   <div
-    class="mx-auto max-w-full sm:max-w-md bg-gray-200 dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transform transition-all duration-500"
+    class="mx-auto max-w-full sm:max-w-md bg-gray-200 dark:bg-[#2d2d2d] rounded-lg shadow-lg overflow-hidden transform transition-all duration-500"
     :class="{ 'scale-100 opacity-100': isVisible, 'scale-95 opacity-0': !isVisible }">
     <!-- Header -->
     <div class="relative transition-all duration-700"

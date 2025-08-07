@@ -126,13 +126,13 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="group mx-auto w-full max-w-3xl bg-gray-200 dark:bg-[#181A1B] rounded-lg shadow-xl relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.01] hover:shadow-blue-500/20"
+    class="group mx-auto w-full max-w-3xl bg-gray-200 dark:bg-[#2d2d2d] rounded-lg shadow-xl relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.01] hover:shadow-blue-500/20"
     style="backdrop-filter: blur(2.5px);"
   >
     <!-- Chart section -->
     <div class="flex justify-center mx-5 pt-5 pb-5 animate-fade-in">
       <div
-        class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#23262a] rounded-lg px-1 py-1 shadow-md"
+        class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#292929] rounded-lg px-1 py-1 shadow-md"
         style="height:180px; max-width:100vw; width:90%;"
       >
         <canvas ref="chartRef" style="width:100% !important; height:100% !important;"></canvas>
@@ -157,7 +157,7 @@ onUnmounted(() => {
       </div>
       <hr class="my-3 border-gray-200 dark:border-gray-700" />
       <span class="block text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-medium">
-        I have the ability to build enterprise-level applications following acquired gamut of knowledge and thus building scalable architecture with proper design patterns and OOPs concepts.
+        I have the ability to build enterprise-level applications by applying my broad range of acquired knowledge, enabling me to architect scalable systems using solid design patterns and OOP principles.
       </span>
     </div>
     <!-- Glow hover -->

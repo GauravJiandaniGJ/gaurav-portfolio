@@ -1,5 +1,5 @@
 <template>
-    <div class="project-card w-full flex flex-col p-5 bg-gray-200 border border-gray-200 rounded-lg shadow-sm dark:bg-[#1b1b1b] dark:border-gray-700 cursor-pointer hover:shadow-lg transition"
+    <div class="project-card w-full flex flex-col p-5 bg-gray-200 border border-gray-200 rounded-lg shadow-sm dark:bg-[#252525] dark:border-gray-700 cursor-pointer hover:shadow-lg transition"
         @click="$router.push('/project/' + project.id)">
         <div class="flex items-center mb-5 gap-2">
             <div v-if="project.logo" class="logo-wrapper">
@@ -8,7 +8,13 @@
             <div>
                 <h5 class="text-xl font-semibold tracking-tight text-blue-700 dark:text-blue-400 leading-tight">{{
                     project.title }}</h5>
-                <div class="text-xs text-gray-400 leading-tight">{{ project.technology }}</div>
+                <div class="flex gap-2 items-center min-h-[20px]">
+                    <template v-for="tech in project.technology" :key="tech.name">
+                        <img :src="tech.logo" :alt="tech.name + ' logo'" class="tech-logo" :title="tech.name"
+                            loading="lazy" />
+                    </template>
+                </div>
+
             </div>
         </div>
         <p class="mb-1 text-gray-700 font-semibold dark:text-gray-300 text-sm leading-tight">
@@ -58,8 +64,8 @@ defineProps({
 }
 
 .logo-wrapper {
-    width: 34px;
-    height: 34px;
+    width: 45px;
+    height: 45px;
     background: #fff;
     display: flex;
     align-items: center;
@@ -91,7 +97,36 @@ defineProps({
 }
 
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
 }
+
+.tech-logo {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  max-width: 18px;
+  max-height: 22px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px 0 rgba(60,60,60,0.07);
+  border: 1px solid #e6e6e6;
+  display: inline-block;
+  transition: transform 0.18s cubic-bezier(.32,2,.55,.27), box-shadow 0.18s;
+  vertical-align: middle;
+  /* For better logo visibility */
+  padding: 2px;
+}
+
+.tech-logo:hover {
+  transform: scale(1.1) rotate(-5deg);
+  box-shadow: 0 4px 16px 0 rgba(60,60,60,0.17);
+  z-index: 2;
+  border-color: #38bdf8;
+  background: #f8fafc;
+}
+
+
 
 </style>
