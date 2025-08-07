@@ -40,7 +40,7 @@ function closeModal () {
         <!-- Title & Logo -->
         <div class="flex items-center gap-4 sm:gap-8 mb-6 flex-wrap sm:flex-nowrap">
           <img v-if="project.logo" :src="project.logo"
-            class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain border bg-white dark:bg-[#191919] shadow-lg flex-shrink-0" />
+            class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-white dark:bg-[#191919] shadow-lg flex-shrink-0" />
           <div>
             <h1
               class="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-500 dark:text-blue-300 leading-tight drop-shadow-sm mb-2">
@@ -84,7 +84,7 @@ function closeModal () {
         <!-- Project Link -->
         <div v-if="project.url" class="mt-12">
           <a :href="project.url.startsWith('http') ? project.url : 'https://' + project.url"
-            class="inline-block px-8 py-3 rounded-xl bg-blue-600 text-white font-extrabold shadow-2xl hover:bg-blue-700 hover:scale-105 transition text-lg sm:text-xl"
+            class="inline-block px-8 py-3 rounded-lg bg-blue-600 text-white font-extrabold shadow-2xl hover:bg-blue-700 hover:scale-105 transition text-lg sm:text-xl"
             target="_blank" rel="noopener">
             Visit Project
           </a>
@@ -147,7 +147,7 @@ function closeModal () {
   max-height: 38px;
   object-fit: contain;
   background: #fff;
-  border-radius: 9px;
+  border-radius: 4px !important;
   box-shadow: 0 2px 10px 0 rgba(60, 60, 60, 0.10);
   border: 2px solid #e6e6e6;
   display: inline-block;
@@ -185,7 +185,7 @@ li {
   max-height: 350px;
   object-fit: cover;
   object-position: top;
-  border-radius: 12px;
+  border-radius: 10px;
   margin: 0;
   box-shadow: 0 2px 12px rgba(30, 41, 59, 0.06);
   transition: all 0.18s cubic-bezier(.32, 2, .55, .27);
@@ -212,7 +212,7 @@ li {
     min-height: 18px !important;
     max-width: 18px !important;
     max-height: 18px !important;
-    border-radius: 5px !important;
+    border-radius: 10px !important;
     padding: 1.5px !important;
   }
 
@@ -263,7 +263,7 @@ li {
     height: 80px !important;
     max-width: 150vw !important;
     max-height: 80px !important;
-    border-radius: 7px !important;
+    border-radius: 10px !important;
   }
 
   /* Spacing tweaks */

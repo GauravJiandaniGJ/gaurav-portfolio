@@ -3,12 +3,9 @@
 
     <!-- EXPERIENCES -->
     <section id="experiences" class="px-2 sm:px-3 md:px-5">
-      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-2 text-blue-600 text-center">
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 text-blue-600 text-center">
         Professional Experiences
       </h2>
-      <h3 class="subtitle text-xs sm:text-sm font-semibold mb-4 sm:mb-6 text-gray-600 dark:text-gray-300 text-center">
-        Click the cards to view them in detail
-      </h3>
       <div class="grid gap-10 sm:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full">
         <ExperiencedProject v-for="project in projects" :key="project.id" :project="project"
           class="hover:shadow-2xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-lg group"
@@ -22,12 +19,9 @@
 
     <!-- LIVE PROJECTS -->
     <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
-      <h2 class="text-2xl md:text-3xl font-bold mb-2 text-blue-600 text-center w-full">
+      <h2 class="text-2xl md:text-3xl font-bold mb-5 text-blue-600 text-center w-full">
         Live Projects
       </h2>
-      <h3 class="subtitle text-sm font-semibold mb-5 text-gray-400 dark:text-gray-300 text-center w-full">
-        Click the cards to view details
-      </h3>
       <div class="w-full flex flex-row justify-center gap-8 flex-wrap">
         <div v-for="project in personalProjects" :key="project.id"
           class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-blue-900 border border-blue-700 rounded-lg px-10 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
@@ -121,6 +115,23 @@ import Timeline from '@/components/Timeline.vue'
 import Achievements from '@/components/Achievements.vue'
 import Rating from '@/components/Rating.vue'
 import projects from '@/data/projects'
+
+
+import { onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
+onMounted(async () => {
+  if (route.query.scrollTo) {
+    await nextTick()
+    setTimeout(() => {
+      const section = document.getElementById(route.query.scrollTo)
+      if (section) section.scrollIntoView({ behavior: 'smooth' })
+    }, 180)
+  }
+})
+
 
 const isDrawerOpen = ref(false)
 const personalProjectObject = ref({ id: 0, title: '', url: '', description: [], images: [] })

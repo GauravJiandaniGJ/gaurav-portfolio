@@ -70,7 +70,7 @@ defineProps({
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #eee;
     overflow: hidden;
     flex-shrink: 0;
@@ -92,7 +92,7 @@ defineProps({
     .logo-wrapper {
         width: 26px;
         height: 26px;
-        border-radius: 7px;
+        border-radius: 10px;
     }
 }
 
@@ -109,7 +109,7 @@ html {
   max-height: 22px;
   object-fit: contain;
   background: #fff;
-  border-radius: 5px;
+  border-radius: 4px !important;
   box-shadow: 0 2px 8px 0 rgba(60,60,60,0.07);
   border: 1px solid #e6e6e6;
   display: inline-block;

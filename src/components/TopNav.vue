@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useStore } from 'vuex'
+import { useRouter, useRoute } from 'vue-router'
 
 const store = useStore()
 const isDarkModeOn = computed(() => store.state.darkMode)
@@ -15,13 +16,36 @@ const navItems = [
 ]
 
 const mobileOpen = ref(false)
+const router = useRouter()
+const route = useRoute()
+
+
 function scrollToSection (sectionId) {
     mobileOpen.value = false
-    setTimeout(() => {
-        const section = document.getElementById(sectionId)
-        if (section) section.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+    if (route.path !== '/') {
+        // Go to home and scroll after navigation (use query param)
+        router.push({ path: '/', query: { scrollTo: sectionId } })
+    } else {
+        setTimeout(() => {
+            scrollToSectionWithOffset(sectionId, getNavbarHeight())
+        }, 100)
+    }
 }
+
+// Helper: get navbar height dynamically
+function getNavbarHeight () {
+    const nav = document.querySelector('nav')
+    return nav ? nav.offsetHeight : 70
+}
+
+// Helper: scroll with offset for sticky/fixed nav
+function scrollToSectionWithOffset (sectionId, offset = 0) {
+    const section = document.getElementById(sectionId)
+    if (!section) return
+    const y = section.getBoundingClientRect().top + window.pageYOffset - offset
+    window.scrollTo({ top: y, behavior: 'smooth' })
+}
+
 </script>
 
 <template>
@@ -55,16 +79,11 @@ function scrollToSection (sectionId) {
                     <span class="sr-only">Toggle dark mode</span>
                     <transition name="fade" mode="out-in">
                         <svg v-if="!isDarkModeOn" key="light"
-  class="w-5 h-5 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-300 transition-all duration-300"
-  viewBox="0 0 24 24" fill="currentColor">
-  <path
-    d="M21 15.5A9 9 0 1 1 12.5 3
-       a7 7 0 1 0 8.5 12.5z"
-    fill="currentColor"
-  />
-</svg>
-
-
+                            class="w-5 h-5 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-300 transition-all duration-300"
+                            viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 15.5A9 9 0 1 1 12.5 3
+       a7 7 0 1 0 8.5 12.5z" fill="currentColor" />
+                        </svg>
                         <svg v-else key="dark" class="w-5 h-5 sm:w-7 sm:h-7 text-yellow-400" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                             <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" fill="none" />
@@ -80,8 +99,7 @@ function scrollToSection (sectionId) {
                         text-blue-600 dark:text-white hover:text-black dark:hover:text-white focus:outline-none">
                         <span>{{ item.text }}</span>
                         <span class="absolute left-1/2 -bottom-1 w-0 group-hover:w-2/3 transition-all duration-400
-                            border-b-2 border-blue-600 "
-                            style="transform: translateX(-50%);"></span>
+                            border-b-2 border-blue-600 " style="transform: translateX(-50%);"></span>
                     </button>
                 </div>
 
@@ -146,8 +164,8 @@ function scrollToSection (sectionId) {
 .fade-leave-from {
     opacity: 1;
 }
-html {
-  scroll-behavior: smooth;
-}
 
+html {
+    scroll-behavior: smooth;
+}
 </style>

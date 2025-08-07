@@ -170,7 +170,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #b1b1b1;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: background 0.2s;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -178,7 +178,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: #ececec;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 /* Dark mode support for scrollbar */
 .dark .custom-scrollbar {
