@@ -47,7 +47,7 @@ const timelineItems = [
       :class="{ 'translate-y-0 opacity-100': isVisible, '-translate-y-4 opacity-0': !isVisible }" style="z-index: 1000">
       <!-- CV Button -->
       <div class="absolute bottom-0 right-2 z-50 pointer-events-auto">
-        <a href="https://gauravjiandani.com/Gaurav_Jiandani_CV.pdf" target="_self" rel="noopener" tabindex="0"
+        <a href="public/static/Gaurav_Jiandani_CV.pdf" target="_self" rel="noopener" tabindex="0"
           class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 shadow-lg transition-all duration-300 hover:scale-110 hover:rotate-12 animate-bounce"
           style="animation-delay:2s; animation-duration:2s; pointer-events: auto;">
           <span class="font-bold text-xs sm:text-sm">CV</span>
