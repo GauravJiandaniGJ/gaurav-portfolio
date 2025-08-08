@@ -5,12 +5,12 @@
 /* Local Montserrat variable font */
 @font-face {
   font-family: 'Libertinus_Sans';
-  src: url('/Libertinus_Sans/LibertinusSans-Regular.ttf') format('truetype');
+  src: url('/Jost/static/Jost-Regular.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
 body {
-  font-family: 'Libertinus_Sans', Arial, Helvetica, sans-serif !important;
+  font-family: 'Jost', Arial, Helvetica, sans-serif !important;
 }
