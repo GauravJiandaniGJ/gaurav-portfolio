@@ -6,7 +6,7 @@
       <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 text-blue-600 text-center">
         Professional Experiences
       </h2>
-      <div class="grid gap-10 sm:gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full">
+      <div class="grid gap-8 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full">
         <ExperiencedProject v-for="project in projects" :key="project.id" :project="project"
           class="hover:shadow-2xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-lg group"
           @mouseenter="createRipple($event)">
@@ -15,7 +15,7 @@
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
 
     <!-- LIVE PROJECTS -->
     <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
@@ -24,11 +24,11 @@
       </h2>
       <div class="w-full flex flex-row justify-center gap-8 flex-wrap">
         <div v-for="project in personalProjects" :key="project.id"
-          class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-blue-900 border border-blue-700 rounded-lg px-10 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
-          @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })"
-          style="margin-bottom: 0.5rem;">
+          class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-blue-900 border border-gray-600 rounded-lg px-5 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
+          @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })">
           <!-- Ripple animation circle -->
-          <span class="absolute inset-0 rounded-lg pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
+          <span
+            class="absolute inset-0 rounded-lg pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
           <!-- Shine effect on hover -->
           <span class="shine"></span>
           <!-- SVG: Only visible on hover -->
@@ -40,17 +40,19 @@
             </svg>
           </span>
           <!-- Card content -->
-          <div class="font-semibold text-xl mb-2 text-white z-10 transition-all duration-300 group-hover:tracking-widest group-hover:text-blue-300">
+          <div
+            class="font-semibold text-xl mb-2 text-white z-10 transition-all duration-300 group-hover:text-blue-300">
             {{ project.title }}
           </div>
-          <div class="mb-2 text-base font-medium text-gray-300 z-10 transition-all duration-300 group-hover:text-blue-100">
+          <div
+            class="mb-2 text-base font-medium text-gray-300 z-10 transition-all duration-300 group-hover:text-blue-100">
             Technology: <span class="font-semibold">{{ project.technology }}</span>
           </div>
         </div>
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
 
     <!-- PARALLAX / QUOTE SECTION -->
     <section class="px-2 sm:px-3 md:px-5">
@@ -65,37 +67,39 @@
           transform: `translateY(${parallaxOffset}px)`
         }"></div>
         <div class="absolute inset-0 bg-black/40 z-10"></div>
-        <div class="relative z-20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[300px] md:min-h-[500px]">
-          <span class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-lg text-yellow-400 px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
-            Developer by Day and Designer by Night
+        <div
+          class="relative z-20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[300px] md:min-h-[500px]">
+          <span
+            class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-lg shadow-xl text-white px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
+            DEVELOPER BY DAY AND DESIGNER BY NIGHT
           </span>
         </div>
         <span class="ripple"></span>
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
 
     <!-- TIMELINE -->
     <section id="timeline" class="px-2 sm:px-3 md:px-5">
       <Timeline />
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
 
     <!-- ACHIEVEMENTS -->
     <section id="achievements" class="px-2 sm:px-3 md:px-5">
-      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 sm:mb-6 text-blue-600 text-center">
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 sm:mb-5 text-blue-600 text-center">
         Achievements
       </h2>
       <Achievements />
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-300 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
 
     <!-- SKILLS -->
     <section id="skills" class="px-2 sm:px-3 md:px-5">
-      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 sm:mb-6 text-blue-600 text-center">
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 sm:mb-5 text-blue-600 text-center">
         Skills
       </h2>
       <Rating />
@@ -200,18 +204,6 @@ html {
   scroll-behavior: smooth;
 }
 
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(0);
-  pointer-events: none;
-}
-
-.show {
-  animation: ripple-effect 0.6s linear;
-}
-
 @keyframes ripple-effect {
   to {
     transform: scale(4);
@@ -247,12 +239,15 @@ html {
     transform: translateX(-60%) skewX(-16deg);
     opacity: 0.10;
   }
+
   50% {
     opacity: 0.4;
   }
+
   85% {
     opacity: 0.2;
   }
+
   100% {
     transform: translateX(60%) skewX(-16deg);
     opacity: 0;

@@ -11,7 +11,7 @@ module.exports = {
                 'nav-dark': '#19202c'
             },
             fontFamily: {
-                sans: ['Jost', 'Arial', 'Helvetica', 'sans-serif'],
+                sans: ['Gafata', 'Arial', 'Helvetica', 'sans-serif'],
             }
         }
     },

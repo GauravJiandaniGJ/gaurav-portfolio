@@ -40,7 +40,7 @@ const timelineItems = [
 
 <template>
   <div
-    class="mx-auto max-w-full sm:max-w-md bg-gray-200 dark:bg-[#2d2d2d] rounded-lg shadow-lg overflow-hidden transform transition-all duration-500"
+    class="mx-auto max-w-full sm:max-w-md bg-gray-300 dark:bg-[#252525] rounded-lg border-gray-200 dark:border-gray-800  shadow-lg overflow-hidden transform transition-all duration-500"
     :class="{ 'scale-100 opacity-100': isVisible, 'scale-95 opacity-0': !isVisible }">
     <!-- Header -->
     <div class="relative transition-all duration-700"
@@ -108,7 +108,7 @@ const timelineItems = [
                 :class="item.color" :style="{ animationDelay: `${0.5 + i * 100}ms` }">
                 <template v-if="item.avatar">
                   <img :src="item.avatar"
-                    class="w-5 h-5 sm:w-6 sm:h-6 rounded-full transition-transform duration-500 hover:rotate-12" />
+                    class="rounded-full transition-transform duration-500 hover:rotate-12" />
                 </template>
                 <template v-else>
                   <div class="w-full h-full rounded-full flex items-center justify-center">
@@ -119,7 +119,7 @@ const timelineItems = [
               </div>
               <!-- Connecting line animation -->
               <div
-                class="absolute top-2 sm:top-2.5 left-5 sm:left-6 w-2 h-0.5 bg-gray-200 dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
+                class="absolute top-2 sm:top-2.5 left-5 sm:left-6 w-2 h-0.5 bg-gray-300 dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
               </div>
             </div>
             <!-- Content -->

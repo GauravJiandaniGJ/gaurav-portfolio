@@ -80,7 +80,7 @@ function renderChart() {
         x: {
           grid: { display: false },
           ticks: {
-            color: '#64748b',
+            color: '#8e8e8e',
             font: ctx => ({
               size: getTickFontSize(),
               weight: 500,
@@ -125,44 +125,48 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="group mx-auto w-full max-w-3xl bg-gray-200 dark:bg-[#2d2d2d] rounded-lg shadow-xl relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.01] hover:shadow-blue-500/20"
-    style="backdrop-filter: blur(2.5px);"
-  >
-    <!-- Chart section -->
-    <div class="flex justify-center mx-5 pt-5 pb-5 animate-fade-in">
-      <div
-        class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#292929] rounded-lg px-1 py-1 shadow-md"
-        style="height:180px; max-width:100vw; width:90%;"
-      >
-        <canvas ref="chartRef" style="width:100% !important; height:100% !important;"></canvas>
-      </div>
+<div
+  class="group mx-auto w-full max-w-3xl bg-gray-300 dark:bg-[#252525] rounded-lg shadow-xl relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.005] dark:hover:bg-[#212121] hover:shadow-xl">
+
+  <!-- Shine Layer -->
+  <span class="shine"></span>
+
+  <!-- Chart section -->
+  <div class="flex justify-center mx-5 pt-5 pb-5 animate-fade-in relative z-10">
+    <div
+      class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#383838] rounded-lg px-1 py-1 shadow-md"
+      style="height:180px; max-width:100vw; width:90%;">
+      <canvas ref="chartRef" style="width:100% !important; height:100% !important;"></canvas>
     </div>
-    <!-- Skills Content -->
-    <div class="px-3 sm:px-6 pt-1 pb-5">
-      <div class="text-lg sm:text-xl font-bold mb-2 text-blue-700 dark:text-blue-300 tracking-tight transition-colors">
-        Skills
-      </div>
-      <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
-        <span class="font-medium">Favourable Programming frameworks:</span>
-        <span class="font-semibold text-gray-900 dark:text-white"> Laravel, VueJs, DJango, React, NodeJs, Rasa, Selenium, Zend</span>
-      </div>
-      <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
-        <span class="font-medium">Cloud and Devops:</span>
-        <span class="font-semibold text-gray-900 dark:text-white"> AWS: EC2, S3, EBS, Cloudwatch, RDS, Lambda, Connect</span>
-      </div>
-      <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
-        <span class="font-medium">Database:</span>
-        <span class="font-semibold text-gray-900 dark:text-white"> MySQL and MongoDB</span>
-      </div>
-      <hr class="my-3 border-gray-200 dark:border-gray-700" />
-      <span class="block text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-medium">
-        I have the ability to build enterprise-level applications by applying my broad range of acquired knowledge, enabling me to architect scalable systems using solid design patterns and OOP principles.
-      </span>
-    </div>
-    <!-- Glow hover -->
-    <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-45 transition-all duration-700 blur-2xl w-[85%] h-[46%] rounded-full z-0 bg-blue-400/10"></span>
   </div>
+
+  <!-- Skills Content -->
+  <div class="px-3 sm:px-6 pt-1 pb-5 relative z-10">
+    <div class="text-lg sm:text-xl font-bold mb-2 text-blue-700 dark:text-blue-300 tracking-tight transition-colors">
+      Skills
+    </div>
+    <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
+      <span class="font-medium">Favourable Programming frameworks:</span>
+      <span class="font-semibold text-gray-900 dark:text-white"> Laravel, VueJs, DJango, React, NodeJs, Rasa, Selenium, Zend</span>
+    </div>
+    <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
+      <span class="font-medium">Cloud and Devops:</span>
+      <span class="font-semibold text-gray-900 dark:text-white"> AWS: EC2, S3, EBS, Cloudwatch, RDS, Lambda, Connect</span>
+    </div>
+    <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
+      <span class="font-medium">Database:</span>
+      <span class="font-semibold text-gray-900 dark:text-white"> MySQL and MongoDB</span>
+    </div>
+    <hr class="my-3 border-gray-200 dark:border-gray-700" />
+    <span class="block text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-medium">
+      I have the ability to build enterprise-level applications by applying my broad range of acquired knowledge, enabling me to architect scalable systems using solid design patterns and OOP principles.
+    </span>
+  </div>
+
+  <!-- Glow hover -->
+  <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 transition-all duration-700 blur-2xl w-[85%] h-[46%] rounded-full z-0 bg-blue-400/10"></span>
+</div>
+
 </template>
 
 <style scoped>
@@ -192,5 +196,39 @@ onUnmounted(() => {
 html {
   scroll-behavior: smooth;
 }
+
+.shine {
+  position: absolute;
+  top: -70%;
+  left: -60%;
+  width: 200%;
+  height: 230%;
+  background: linear-gradient(
+    120deg,
+    transparent 60%,
+    rgba(255, 255, 255, 0.10) 75%,
+    transparent 90%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  transform: rotate(25deg);
+  transition: opacity 0.45s;
+}
+
+.group:hover .shine {
+  opacity: 1;
+  animation: shine-move 1.5s ease forwards;
+}
+
+@keyframes shine-move {
+  from {
+    transform: translateX(-100%) rotate(180deg);
+  }
+  to {
+    transform: translateX(100%) rotate(180deg);
+  }
+}
+
 
 </style>

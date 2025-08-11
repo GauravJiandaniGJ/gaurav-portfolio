@@ -1,5 +1,5 @@
 <template>
-    <div class="project-card w-full flex flex-col p-5 bg-gray-200 border border-gray-200 rounded-lg shadow-sm dark:bg-[#252525] dark:border-gray-700 cursor-pointer hover:shadow-lg transition"
+    <div class="project-card w-full flex flex-col p-5 bg-gray-300 border border-gray-200 rounded-lg shadow-sm dark:bg-[#252525] dark:border-gray-600 cursor-pointer hover:shadow-lg transition"
         @click="$router.push('/project/' + project.id)">
         <div class="flex items-center mb-5 gap-2">
             <div v-if="project.logo" class="logo-wrapper">
@@ -90,9 +90,9 @@ defineProps({
     }
 
     .logo-wrapper {
-        width: 26px;
-        height: 26px;
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
     }
 }
 
@@ -101,11 +101,11 @@ html {
 }
 
 .tech-logo {
-  width: 18px;
-  height: 18px;
-  min-width: 18px;
-  min-height: 18px;
-  max-width: 18px;
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  min-height: 15px;
+  max-width: 15px;
   max-height: 22px;
   object-fit: contain;
   background: #fff;

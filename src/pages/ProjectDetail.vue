@@ -25,7 +25,7 @@ function closeModal () {
 </script>
 
 <template>
-  <div class="w-full min-h-screen bg-white dark:bg-[#292828] flex justify-center items-start px-2 sm:px-6">
+  <div class="w-full min-h-screen bg-white dark:bg-[#303030] flex justify-center items-start px-2 sm:px-6">
     <div class="w-full max-w-5xl mx-auto bg-transparent pb-12">
       <!-- Back Button -->
       <button @click="goBack"
@@ -61,20 +61,24 @@ function closeModal () {
         <!-- Description -->
         <ul class="mb-8 list-disc pl-8">
           <li v-for="desc in project.description" :key="desc.id"
-            class="mb-2 text-gray-800 dark:text-gray-200 text-lg sm:text-xl leading-relaxed font-medium">
+            class="mb-2 text-gray-800 dark:text-gray-200 text-md sm:text-md">
             {{ desc.content }}
           </li>
         </ul>
         <!-- Screenshots with Zoom Modal -->
-        <!-- Screenshots with Zoom Modal: Side-by-side row, small, aligned -->
+        <!-- Screenshots -->
         <div v-if="project.images && project.images.length" class="mb-10">
           <h3 class="font-bold text-lg sm:text-2xl mb-5 text-blue-700 dark:text-blue-200">Screenshots</h3>
-          <div class="flex flex-row flex-wrap gap-3 sm:gap-5 items-center justify-start">
-            <img v-for="img in project.images" :src="img.src" :key="img.id"
-              class="project-gallery-img cursor-zoom-in rounded-lg object-cover border-2 border-gray-200 dark:border-[#222] bg-white dark:bg-[#191919] shadow transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-blue-500"
-              loading="lazy" :alt="project.title + ' screenshot ' + img.id" @click="openModal(img.src)" />
+
+          <!-- 1 col on mobile, exactly 2 cols from sm and up -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
+            <img v-for="img in project.images" :key="img.id" :src="img.src"
+              :alt="project.title + ' screenshot ' + img.id" class="gallery-tile cursor-zoom-in border-2 border-gray-200 dark:border-[#222] bg-white dark:bg-[#191919]
+             rounded-lg shadow transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-blue-500"
+              loading="lazy" @click="openModal(img.src)" />
           </div>
         </div>
+
 
         <!-- Reference -->
         <div v-if="project.reference" class="mt-4 text-base sm:text-lg text-gray-500 dark:text-gray-400">
@@ -157,10 +161,10 @@ function closeModal () {
 }
 
 .tech-logo-lg:hover {
-  transform: scale(1.14) rotate(-3deg);
+  transform: scale(1.05);
   box-shadow: 0 4px 16px 0 rgba(60, 60, 60, 0.19);
   z-index: 2;
-  border-color: #38bdf8;
+  border-color: #93c5fd;
   background: #f8fafc;
 }
 
@@ -212,7 +216,6 @@ li {
     min-height: 18px !important;
     max-width: 18px !important;
     max-height: 18px !important;
-    border-radius: 10px !important;
     padding: 1.5px !important;
   }
 
@@ -291,6 +294,23 @@ li {
     padding-left: 1.2rem !important;
   }
 }
+
+/* Two-up gallery tiles: fill the column nicely */
+.gallery-tile {
+  width: 100%;
+  /* Keeps a consistent card shape; tweak if you prefer taller/shorter */
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 10px;
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .gallery-tile { aspect-ratio: 16 / 9; }
+}
+
+
 
 html {
   scroll-behavior: smooth;

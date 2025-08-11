@@ -38,7 +38,7 @@ const fullUrl = computed(() => {
                             class="underline text-white hover:text-blue-200 ml-1">{{ project.url }}</a>
                     </div>
                     <button @click="emit('close-drawer')"
-                        class="ml-4 px-4 py-2 rounded bg-white text-blue-600 hover:bg-gray-200 transition font-semibold">
+                        class="ml-4 px-4 py-2 rounded bg-white text-blue-600 hover:bg-gray-300 transition font-semibold">
                         Close
                     </button>
                 </div>

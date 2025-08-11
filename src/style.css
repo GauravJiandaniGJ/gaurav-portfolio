@@ -5,12 +5,12 @@
 /* Local Montserrat variable font */
 @font-face {
   font-family: 'Libertinus_Sans';
-  src: url('/Jost/static/Jost-Regular.ttf') format('truetype');
+  src: url('/Gafata/Gafata-Regular.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
 body {
-  font-family: 'Jost', Arial, Helvetica, sans-serif !important;
+  font-family: 'Gafata', Helvetica, sans-serif !important;
 }

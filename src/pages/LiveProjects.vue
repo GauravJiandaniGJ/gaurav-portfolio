@@ -69,7 +69,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
 </script>
 
 <template>
-    <div class="w-full min-h-screen bg-white dark:bg-[#292828] flex flex-col items-center py-4 sm:py-8 px-1 sm:px-0">
+    <div class="w-full min-h-screen bg-white dark:bg-[#303030] flex flex-col items-center py-4 sm:py-8 px-1 sm:px-0">
         <div class="w-full max-w-6xl mx-auto">
             <!-- Back Button -->
             <button @click="goBack"
@@ -81,16 +81,16 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
             </button>
 
             <div v-if="project"
-                class="w-full bg-gray-200 dark:bg-gray-700 rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fadeIn scale-100 md:scale-105 md:hover:scale-105 transition-transform duration-400">
+                class="w-full bg-gray-300 dark:bg-gray-700 rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fadeIn scale-100 md:scale-105 md:hover:scale-105 transition-transform duration-400">
                 <!-- Image Gallery -->
                 <div
-                    class="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-500 dark:bg-gray-800 p-10 md:p-10 gap-5 md:gap-10">
+                    class="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-500 dark:bg-gray-800 p-5 md:p-10 gap-5 md:gap-10">
                     <div v-if="project.images && project.images.length"
                         class="flex flex-col gap-6 w-full items-center">
                         <img v-for="img in project.images" :key="img.id"
                             :src="img.src.startsWith('/static/') ? img.src : '/static/' + img.src.replace(/^\/+/, '')"
                             :alt="project.title + ' screenshot ' + img.id"
-                            class="w-[220px] h-[150px] sm:w-[320px] sm:h-[200px] md:w-[340px] md:h-[220px] lg:w-[490px] lg:h-[220px] object-cover rounded-lg shadow-xl hover:scale-[1.045] hover:-rotate-1 transition-all duration-300 cursor-pointer"
+                            class="w-[350px] h-[150px] sm:w-[320px] sm:h-[200px] md:w-[340px] md:h-[250px] lg:w-[550px] lg:h-[220px] object-cover rounded-lg shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
                             loading="lazy" @click="openZoom(img)" />
                     </div>
                 </div>
@@ -132,7 +132,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
 
         <!-- Zoomed Image Modal -->
         <transition name="fade">
-            <div v-if="zoomedImg" class="fixed z-[9999] inset-0 bg-black/90 flex items-center justify-center"
+            <div v-if="zoomedImg" class="fixed z-[9999] inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
                 @click.self="closeZoom">
                 <img :src="zoomedImg.src.startsWith('/static/') ? zoomedImg.src : '/static/' + zoomedImg.src.replace(/^\/+/, '')"
                     :alt="zoomedImg.id"
