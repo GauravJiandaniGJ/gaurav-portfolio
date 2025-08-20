@@ -24,7 +24,7 @@
       </h2>
       <div class="w-full flex flex-row justify-center gap-8 flex-wrap">
         <div v-for="project in personalProjects" :key="project.id"
-          class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-blue-900 border border-gray-600 rounded-lg px-5 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
+          class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-[#5e7cdd] dark:bg-blue-900 rounded-lg px-5 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
           @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })">
           <!-- Ripple animation circle -->
           <span
