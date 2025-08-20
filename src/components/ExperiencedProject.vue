@@ -20,7 +20,7 @@
         <p class="mb-1 text-gray-700 font-semibold dark:text-gray-300 text-sm leading-tight">
             Industry: {{ project.productSite }}
         </p>
-        <ul class="mb-1 text-gray-500 dark:text-gray-400 text-xs list-disc pl-4 leading-snug">
+        <ul class="mb-1 text-gray-500 dark:text-gray-400 text-xs list-disc leading-snug">
             <template v-for="desc in project.description.slice(0, 2)" :key="desc.id">
                 <li class="truncate-desc">{{ desc.content }}</li>
             </template>
