@@ -18,7 +18,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
 
   <transition name="slide">
     <aside v-if="drawer"
-      class="fixed top-0 left-0 z-50 h-full w-[98vw] max-w-[400px] sm:w-[32rem] sm:max-w-sm lg:w-[36rem] bg-gray-200 dark:bg-[#393939] shadow-2xl flex flex-col transition-transform duration-300 overflow-y-auto custom-scrollbar">
+      class="fixed top-0 left-0 z-50 h-full w-[98vw] max-w-[400px] sm:w-[32rem] sm:max-w-sm lg:w-[36rem] bg-gray-200 dark:bg-[#393939] shadow-sm flex flex-col transition-transform duration-300 overflow-y-auto custom-scrollbar">
 
       <!-- Close icon for mobile -->
       <div class="flex justify-end pt-3 pr-3 sm:pt-4 sm:pr-4 lg:hidden">
@@ -32,7 +32,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
       <!-- Avatar/Profile -->
       <div class="flex flex-col items-center justify-center py-4 sm:py-6 mb-10 ">
         <div
-          class="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden mt-10 sm:mt-20 mb-2 sm:mb-4 shadow-xl transition-transform duration-300 hover:scale-105">
+          class="w-20 h-20 sm:w-28 sm:h-28 rounded-full overflow-hidden mt-10 sm:mt-20 mb-2 sm:mb-4 shadow-sm transition-transform duration-300 hover:scale-105">
 
           <img :src="profileImg" alt="Profile" class="object-cover w-full h-full" />
         </div>
@@ -287,8 +287,8 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
 
 @media (max-width: 400px) {
   aside {
-    width: 75vw !important;
-    max-width: 75vw !important;
+    width: 65vw !important;
+    max-width: 65vw !important;
   }
 
   .w-20,

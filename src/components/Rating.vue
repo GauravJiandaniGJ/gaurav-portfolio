@@ -126,7 +126,7 @@ onUnmounted(() => {
 
 <template>
 <div
-  class="group mx-auto w-full max-w-3xl bg-gray-300 dark:bg-[#252525] rounded-lg shadow-xl relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.005] dark:hover:bg-[#212121] hover:shadow-xl">
+  class="group mx-auto w-full max-w-3xl bg-[#f2f2f2] dark:bg-[#272727] rounded-lg shadow-sm relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.005] dark:hover:bg-[#212121] hover:shadow-sm">
 
   <!-- Shine Layer -->
   <span class="shine"></span>

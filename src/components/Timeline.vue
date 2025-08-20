@@ -40,15 +40,15 @@ const timelineItems = [
 
 <template>
   <div
-    class="mx-auto max-w-full sm:max-w-md bg-gray-300 dark:bg-[#252525] rounded-lg border-gray-200 dark:border-gray-800  shadow-lg overflow-hidden transform transition-all duration-500"
-    :class="{ 'scale-100 opacity-100': isVisible, 'scale-95 opacity-0': !isVisible }">
+    class="mx-auto max-w-full sm:max-w-md bg-[#f2f2f2] dark:bg-[#272727] rounded-lg border-gray-500 dark:border-gray-800  shadow-sm overflow-hidden transform transition-all duration-500"
+    :class="{ ' border border-[#e0e0e0] dark:border-[#303030] scale-100 opacity-100': isVisible, ' opacity-0': !isVisible }">
     <!-- Header -->
     <div class="relative transition-all duration-700"
       :class="{ 'translate-y-0 opacity-100': isVisible, '-translate-y-4 opacity-0': !isVisible }" style="z-index: 1000">
       <!-- CV Button -->
       <div class="absolute bottom-0 right-2 z-50 pointer-events-auto">
         <a href="/static/Gaurav_Jiandani_CV.pdf" target="_self" rel="noopener" tabindex="0"
-          class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 shadow-lg transition-all duration-300 hover:scale-110 hover:rotate-12 animate-bounce"
+          class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 shadow-sm transition-all duration-300 hover:scale-110 hover:rotate-12 animate-bounce"
           style="animation-delay:2s; animation-duration:2s; pointer-events: auto;">
           <span class="font-bold text-xs sm:text-sm">CV</span>
         </a>
@@ -119,7 +119,7 @@ const timelineItems = [
               </div>
               <!-- Connecting line animation -->
               <div
-                class="absolute top-2 sm:top-2.5 left-5 sm:left-6 w-2 h-0.5 bg-gray-300 dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
+                class="absolute top-2 sm:top-2.5 left-5 sm:left-6 w-2 h-0.5 bg-[#f2f2f2] dark:bg-gray-600 transform origin-left transition-all duration-500 group-hover:scale-x-125 group-hover:bg-blue-400">
               </div>
             </div>
             <!-- Content -->

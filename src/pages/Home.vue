@@ -3,19 +3,19 @@
 
     <!-- EXPERIENCES -->
     <section id="experiences" class="px-2 sm:px-3 md:px-5">
-      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 text-blue-600 text-center">
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mt-10 mb-5 text-blue-600 text-center">
         Professional Experiences
       </h2>
       <div class="grid gap-8 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 w-full">
         <ExperiencedProject v-for="project in projects" :key="project.id" :project="project"
-          class="hover:shadow-2xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-lg group"
+          class="hover:shadow-sm hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden rounded-lg group"
           @mouseenter="createRipple($event)">
           <span class="ripple"></span>
         </ExperiencedProject>
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
+    <div class="my-5 sm:my-10"></div>
 
     <!-- LIVE PROJECTS -->
     <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
@@ -52,12 +52,12 @@
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5"></div>
 
     <!-- PARALLAX / QUOTE SECTION -->
     <section class="px-2 sm:px-3 md:px-5">
       <div ref="parallaxRef"
-        class="relative overflow-hidden rounded-lg min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-xl parallax-section ripple-container"
+        class="relative overflow-hidden rounded-lg min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-sm parallax-section ripple-container"
         @mouseenter="createRipple($event)">
         <div class="absolute inset-0 w-full h-full z-0 parallax-img" :style="{
           backgroundImage: `url('/static/parallax_dark2.jpg')`,
@@ -70,7 +70,7 @@
         <div
           class="relative z-20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[300px] md:min-h-[500px]">
           <span
-            class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-lg shadow-xl text-white px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
+            class="text-base sm:text-2xl md:text-4xl font-black drop-shadow-sm shadow-sm text-white px-2 sm:px-4 py-8 sm:py-10 text-center custom-color">
             DEVELOPER BY DAY AND DESIGNER BY NIGHT
           </span>
         </div>
@@ -78,14 +78,14 @@
       </div>
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5"></div>
 
     <!-- TIMELINE -->
     <section id="timeline" class="px-2 sm:px-3 md:px-5">
       <Timeline />
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5"></div>
 
     <!-- ACHIEVEMENTS -->
     <section id="achievements" class="px-2 sm:px-3 md:px-5">
@@ -95,7 +95,7 @@
       <Achievements />
     </section>
 
-    <div class="my-3 sm:my-5 border-t border-gray-400 dark:border-gray-700"></div>
+    <div class="my-3 sm:my-5"></div>
 
     <!-- SKILLS -->
     <section id="skills" class="px-2 sm:px-3 md:px-5">

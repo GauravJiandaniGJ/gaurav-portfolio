@@ -25,7 +25,7 @@ const fullUrl = computed(() => {
     <transition name="fade">
         <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
             <div
-                class="relative w-full max-w-3xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-y-auto max-h-[95vh]">
+                class="relative w-full max-w-3xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-sm overflow-y-auto max-h-[95vh]">
                 <!-- Toolbar/Header -->
                 <div class="flex items-center bg-blue-600 dark:bg-blue-900 text-white px-4 py-3 rounded-t-lg">
                     <button @click="emit('close-drawer')" class="mr-4 p-2 rounded hover:bg-blue-700 transition"
@@ -38,7 +38,7 @@ const fullUrl = computed(() => {
                             class="underline text-white hover:text-blue-200 ml-1">{{ project.url }}</a>
                     </div>
                     <button @click="emit('close-drawer')"
-                        class="ml-4 px-4 py-2 rounded bg-white text-blue-600 hover:bg-gray-300 transition font-semibold">
+                        class="ml-4 px-4 py-2 rounded bg-white text-blue-600 hover:bg-[#f2f2f2] transition font-semibold">
                         Close
                     </button>
                 </div>

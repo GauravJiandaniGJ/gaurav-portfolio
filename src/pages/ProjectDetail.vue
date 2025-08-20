@@ -26,7 +26,7 @@ function closeModal () {
 
 <template>
   <div class="w-full min-h-screen bg-white dark:bg-[#303030] flex justify-center items-start px-2 sm:px-6">
-    <div class="w-full max-w-5xl mx-auto bg-transparent pb-12">
+    <div class="w-full mx-auto bg-transparent pb-12">
       <!-- Back Button -->
       <button @click="goBack"
         class="mb-10 px-5 py-2 bg-gray-100 dark:bg-[#444] rounded-lg text-gray-700 dark:text-gray-100 font-semibold hover:bg-blue-100 dark:hover:bg-blue-900 transition flex items-center shadow text-base sm:text-lg">
@@ -40,7 +40,7 @@ function closeModal () {
         <!-- Title & Logo -->
         <div class="flex items-center gap-4 sm:gap-8 mb-6 flex-wrap sm:flex-nowrap">
           <img v-if="project.logo" :src="project.logo"
-            class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-white dark:bg-[#191919] shadow-lg flex-shrink-0" />
+            class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-white dark:bg-[#191919] shadow-sm flex-shrink-0" />
           <div>
             <h1
               class="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-500 dark:text-blue-300 leading-tight drop-shadow-sm mb-2">
@@ -74,7 +74,7 @@ function closeModal () {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
             <img v-for="img in project.images" :key="img.id" :src="img.src"
               :alt="project.title + ' screenshot ' + img.id" class="gallery-tile cursor-zoom-in border-2 border-gray-200 dark:border-[#222] bg-white dark:bg-[#191919]
-             rounded-lg shadow transition-all duration-200 hover:scale-105 hover:shadow-lg hover:border-blue-500"
+             rounded-lg shadow transition-all duration-200 hover:scale-105 hover:shadow-sm hover:border-blue-500"
               loading="lazy" @click="openModal(img.src)" />
           </div>
         </div>
@@ -88,7 +88,7 @@ function closeModal () {
         <!-- Project Link -->
         <div v-if="project.url" class="mt-12">
           <a :href="project.url.startsWith('http') ? project.url : 'https://' + project.url"
-            class="inline-block px-8 py-3 rounded-lg bg-blue-600 text-white font-extrabold shadow-2xl hover:bg-blue-700 hover:scale-105 transition text-lg sm:text-xl"
+            class="inline-block px-8 py-3 rounded-lg bg-blue-600 text-white font-extrabold shadow-sm hover:bg-blue-700 hover:scale-105 transition text-lg sm:text-xl"
             target="_blank" rel="noopener">
             Visit Project
           </a>
@@ -143,17 +143,16 @@ function closeModal () {
 
 /* --- DESKTOP/TABLET SIZES --- */
 .tech-logo-lg {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
-  max-width: 38px;
-  max-height: 38px;
+  width: 40px;
+  height: 25px;
+
+  max-width: 40px;
+  max-height: 25px;
   object-fit: contain;
   background: #fff;
   border-radius: 4px !important;
   box-shadow: 0 2px 10px 0 rgba(60, 60, 60, 0.10);
-  border: 2px solid #e6e6e6;
+  border: 1px solid #e6e6e6;
   display: inline-block;
   transition: transform 0.19s cubic-bezier(.32, 2, .55, .27), box-shadow 0.19s;
   vertical-align: middle;

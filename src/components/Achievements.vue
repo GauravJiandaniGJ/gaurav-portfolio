@@ -3,13 +3,13 @@
     <details
       v-for="item in items"
       :key="item.title"
-      class="group rounded-lg shadow-xl bg-gray-300 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:border-0"
+      class="group rounded-lg shadow-sm bg-[#f2f2f2] dark:bg-[#272727] border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:border-0"
     >
       <summary
         class="cursor-pointer flex items-center px-3 py-2 sm:px-5 sm:py-3 text-[15px] sm:text-lg md:text-xl font-semibold sm:font-bold text-blue-700 dark:text-blue-300 focus:outline-none transition-all duration-200
         relative hover:scale-[1.005] hover:rounded-lg
         hover:bg-gray-100 hover:to-gray-100
-        dark:hover:bg-gray-700 hover:shadow-xl
+        dark:hover:bg-gray-700 hover:shadow-sm
         gap-1"
       >
         <span class="flex-1 truncate">{{ item.emoji }} {{ item.title }}</span>

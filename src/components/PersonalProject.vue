@@ -1,6 +1,6 @@
 <template>
     <div
-        class="m-2 rounded-lg shadow-lg border bg-white dark:bg-gray-900 min-h-[120px] max-h-[120px] sm:min-h-[120px] sm:max-h-[120px] flex items-center">
+        class="m-2 rounded-lg shadow-sm border bg-white dark:bg-gray-900 min-h-[120px] max-h-[120px] sm:min-h-[120px] sm:max-h-[120px] flex items-center">
         <div class="flex flex-wrap w-full p-4">
             <div class="w-full md:w-2/3 mb-2 md:mb-0">
                 <span class="font-bold block truncate text-lg">{{ project.title }}</span>

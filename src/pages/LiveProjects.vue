@@ -70,7 +70,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
 
 <template>
     <div class="w-full min-h-screen bg-white dark:bg-[#303030] flex flex-col items-center py-4 sm:py-8 px-1 sm:px-0">
-        <div class="w-full max-w-6xl mx-auto">
+        <div class="w-full max-w-7xl mx-auto">
             <!-- Back Button -->
             <button @click="goBack"
                 class="flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-600 dark:bg-blue-900 text-white font-semibold shadow-md hover:bg-blue-700 dark:hover:bg-blue-800 transition mb-8 mt-2 text-md">
@@ -81,7 +81,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
             </button>
 
             <div v-if="project"
-                class="w-full bg-gray-300 dark:bg-gray-700 rounded-lg shadow-2xl flex flex-col md:flex-row overflow-hidden animate-fadeIn scale-100 md:scale-105 md:hover:scale-105 transition-transform duration-400">
+                class="w-full bg-[#f2f2f2] dark:bg-gray-700 rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden animate-fadeIn scale-100 md:scale-105 md:hover:scale-105 transition-transform duration-400">
                 <!-- Image Gallery -->
                 <div
                     class="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-500 dark:bg-gray-800 p-5 md:p-10 gap-5 md:gap-10">
@@ -90,7 +90,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
                         <img v-for="img in project.images" :key="img.id"
                             :src="img.src.startsWith('/static/') ? img.src : '/static/' + img.src.replace(/^\/+/, '')"
                             :alt="project.title + ' screenshot ' + img.id"
-                            class="w-[350px] h-[150px] sm:w-[320px] sm:h-[200px] md:w-[340px] md:h-[250px] lg:w-[550px] lg:h-[220px] object-cover rounded-lg shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                            class="w-[350px] h-[150px] sm:w-[320px] sm:h-[200px] md:w-[340px] md:h-[250px] lg:w-[550px] lg:h-[220px] object-cover rounded-lg shadow-sm hover:scale-[1.02] transition-all duration-300 cursor-pointer"
                             loading="lazy" @click="openZoom(img)" />
                     </div>
                 </div>
@@ -113,7 +113,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
                     </ul>
                     <a v-if="project.url"
                         :href="project.url.startsWith('http') ? project.url : 'https://' + project.url"
-                        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-lg hover:bg-blue-700 hover:scale-105 transition-all text-md mt-5"
+                        class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-sm hover:bg-blue-700 hover:scale-105 transition-all text-md mt-5"
                         target="_blank" rel="noopener">
                         Visit Project
                         <svg class="w-3 h-3 ml-2" aria-hidden="true" fill="none" viewBox="0 0 18 18">
@@ -136,7 +136,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKey))
                 @click.self="closeZoom">
                 <img :src="zoomedImg.src.startsWith('/static/') ? zoomedImg.src : '/static/' + zoomedImg.src.replace(/^\/+/, '')"
                     :alt="zoomedImg.id"
-                    class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl border-4 border-white"
+                    class="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-sm border-4 border-white"
                     @click.stop />
             </div>
         </transition>
