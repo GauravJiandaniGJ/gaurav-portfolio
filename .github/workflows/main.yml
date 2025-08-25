@@ -1,0 +1,65 @@
+name: 🚀 Deploy Portfolio (Production)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "master"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy over SSH (root@SERVER_IP)
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ secrets.SERVER_IP }} <<EOF
+            set -euo pipefail
+
+            BRANCH="${{ github.event.inputs.branch }}"
+            APP_DIR="${{ secrets.APP_DIR }}"   # e.g. /home/apps/portfolio
+
+            echo "➡️  Deploying branch '\$BRANCH' to '\$APP_DIR'"
+            if [ ! -d "\$APP_DIR/.git" ]; then
+              echo "❌ Repo not found at \$APP_DIR. Clone it there first."
+              exit 1
+            fi
+            cd "\$APP_DIR"
+
+            echo "📦 git pull (1)"
+            git pull || true
+
+            echo "🔀 git checkout \$BRANCH"
+            git fetch origin
+            git checkout "\$BRANCH" || git checkout -b "\$BRANCH" "origin/\$BRANCH"
+
+            echo "🔄 git pull (2)"
+            git pull origin "\$BRANCH"
+
+            echo "🟢 Ensure NVM + Node 22"
+            export NVM_DIR="\$HOME/.nvm"
+            if [ ! -d "\$NVM_DIR" ]; then
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            fi
+            [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
+
+            nvm install 22
+            nvm use 22
+            node -v
+            npm -v
+
+            echo "📥 npm install"
+            npm install --no-audit --no-fund
+
+            echo "🏗️ npm run build"
+            npm run build
+
+            echo "✅ Build complete."
+EOF
