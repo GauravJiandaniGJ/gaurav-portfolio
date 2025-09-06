@@ -151,7 +151,7 @@ onUnmounted(() => {
     </div>
     <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
       <span class="font-medium">Cloud and Devops:</span>
-      <span class="font-semibold text-gray-900 dark:text-white"> AWS: EC2, S3, EBS, Cloudwatch, RDS, Lambda, Connect</span>
+      <span class="font-semibold text-gray-900 dark:text-white"> AWS: EC2, AWS S3, EBS, Cloudwatch, RDS, Lambda, Connect</span>
     </div>
     <div class="mt-1 text-[14px] sm:text-[15px] font-normal text-gray-600 dark:text-gray-300">
       <span class="font-medium">Database:</span>
