@@ -1,0 +1,63 @@
+# Cloudflare Headers Configuration
+# This file configures caching headers for different file types
+
+# Static assets - Cache for 1 year
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# Images - Cache for 6 months
+*.png
+  Cache-Control: public, max-age=15552000
+  X-Content-Type-Options: nosniff
+
+*.jpg
+  Cache-Control: public, max-age=15552000
+  X-Content-Type-Options: nosniff
+
+*.jpeg
+  Cache-Control: public, max-age=15552000
+  X-Content-Type-Options: nosniff
+
+*.webp
+  Cache-Control: public, max-age=15552000
+  X-Content-Type-Options: nosniff
+
+*.svg
+  Cache-Control: public, max-age=15552000
+  X-Content-Type-Options: nosniff
+
+# Fonts - Cache for 1 year
+*.ttf
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+*.woff
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# CSS and JS - Cache for 1 year with versioning
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# HTML files - Cache for 1 hour, revalidate
+/*.html
+  Cache-Control: public, max-age=3600, must-revalidate
+  X-Content-Type-Options: nosniff
+
+# Root HTML - Don't cache aggressively
+/
+  Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
+
+# Security headers
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

@@ -1,0 +1,70 @@
+# Cloudflare Configuration File
+# This file configures Cloudflare settings for optimal performance
+
+[build]
+command = "npm run build"
+
+[build.environment]
+NODE_VERSION = "18"
+
+# Cache configuration
+[cache]
+browser_ttl = 31536000  # 1 year for static assets
+edge_ttl = 31536000     # 1 year for edge cache
+
+# Page rules for different file types
+[[rules]]
+rule = "*.png OR *.jpg OR *.jpeg OR *.webp OR *.svg OR *.ico"
+cache_level = "cache_everything"
+edge_ttl = 15552000  # 6 months
+browser_ttl = 15552000
+
+[[rules]]
+rule = "/static/*"
+cache_level = "cache_everything"
+edge_ttl = 31536000  # 1 year
+browser_ttl = 31536000
+
+[[rules]]
+rule = "/assets/*"
+cache_level = "cache_everything"
+edge_ttl = 31536000  # 1 year
+browser_ttl = 31536000
+
+[[rules]]
+rule = "*.css OR *.js"
+cache_level = "cache_everything"
+edge_ttl = 31536000  # 1 year
+browser_ttl = 31536000
+
+# HTML files - shorter cache
+[[rules]]
+rule = "*.html"
+cache_level = "cache_everything"
+edge_ttl = 3600  # 1 hour
+browser_ttl = 3600
+
+# Security headers
+[security_headers]
+strict_transport_security = "max-age=31536000; includeSubDomains"
+x_frame_options = "DENY"
+x_content_type_options = "nosniff"
+x_xss_protection = "1; mode=block"
+referrer_policy = "strict-origin-when-cross-origin"
+
+# Compression
+[compression]
+brotli = true
+gzip = true
+
+# Minification
+[minification]
+css = true
+html = true
+js = true
+
+# Auto minify
+[auto_minify]
+css = true
+html = true
+js = true

@@ -1,0 +1,8 @@
+# Cloudflare Redirects Configuration
+# Handle SPA routing - redirect all non-file requests to index.html
+
+# SPA fallback - redirect all routes to index.html
+/*    /index.html   200
+
+# Optional: Redirect old URLs if you have any
+# /old-page    /new-page    301

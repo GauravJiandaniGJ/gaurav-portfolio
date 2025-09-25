@@ -50,6 +50,10 @@ export default [
                 content: 'Implemented a cost-effective tree data structure within Redis and developed customer APIs using Flask to ensure a response time of under 2 seconds utilized by 100,000 customers on a daily basis.'
             }
         ],
+        images: [
+            { id: 1, src: '/static/WPD discout tag.png' },
+            { id: 2, src: '/static/WPD price.png' }
+        ],
         logo: '/static/wpd.webp',
     },
     {
@@ -95,7 +99,10 @@ export default [
         ],
         images: [
             { id: 1, src: '/static/areceivables/areceivables1.png' },
-            { id: 2, src: '/static/areceivables/areceivables2.png' }
+            { id: 2, src: '/static/areceivables/areceivables2.png' },
+            { id: 3, src: '/static/AR1.png' },
+            { id: 4, src: '/static/AR2.png' },
+            { id: 5, src: '/static/AR3.png' }
         ],
         logo: '/static/areceivables.png'
     },
