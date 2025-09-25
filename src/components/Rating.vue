@@ -18,7 +18,7 @@ const labelsShort = [
   'Test',
   'Devops'
 ]
-const value = [1000, 980, 760, 500, 720, 910]
+const value = [10, 9.8, 7.6, 5, 7.2, 9.1]
 
 const chartRef = ref(null)
 let chartInstance = null
@@ -101,10 +101,10 @@ function renderChart() {
             font: { size: 12, weight: 500, family: 'Inter, Arial, sans-serif' },
             callback: v => v.toLocaleString(),
             padding: 5,
-            stepSize: 200,
+            stepSize: 2,
           },
           min: 0,
-          max: 1100
+          max: 11
         }
       }
     }

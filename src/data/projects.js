@@ -20,6 +20,9 @@ export default [
                 content: 'Architected real-time inventory and pricing logic with seasonal/promotional rate sheets, and built admin tools for booking management, resource maintenance, and internal communications.'
             }
         ],
+        images: [
+            { id: 1, src: '/static/SmartRezSs.png' }
+        ],
         logo: '/static/SmartRez.png',
     },
     {
