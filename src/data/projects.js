@@ -21,7 +21,11 @@ export default [
             }
         ],
         images: [
-            { id: 1, src: '/static/SmartRezSs.png' }
+            { id: 1, src: '/static/SZAssestCL.png' },
+            { id: 2, src: '/static/SZBooking.png' },
+            { id: 3, src: '/static/SZDashboard.png' },
+            { id: 4, src: '/static/SZLanding.png' },
+            { id: 5, src: '/static/SZLogin.png' }
         ],
         logo: '/static/SmartRez.png',
     },
