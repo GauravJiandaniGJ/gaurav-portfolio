@@ -13,7 +13,7 @@ export default [
         description: [
             {
                 id: 1,
-                content: 'Designed and implemented the slot availability engine with overlapping bookings, group capacity restrictions, blackout periods, and rescheduling workflows—powering dozens of operators on a shared multi-tenant platform.'
+                content: 'Designed and implemented the slot availability engine with overlapping bookings, group capacity restrictions, blackout periods, and rescheduling workflows powering dozens of operators on a shared multi-tenant platform.'
             },
             {
                 id: 2,
