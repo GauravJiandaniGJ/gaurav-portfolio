@@ -40,7 +40,7 @@ function closeModal () {
         <!-- Title & Logo -->
         <div class="flex items-center gap-4 sm:gap-8 mb-6 flex-wrap sm:flex-nowrap">
           <img v-if="project.logo" :src="project.logo"
-            class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-white dark:bg-[#191919] shadow-sm flex-shrink-0" />
+            class="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-contain border bg-white shadow-sm flex-shrink-0" />
           <div>
             <h1
               class="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-500 dark:text-blue-300 leading-tight drop-shadow-sm mb-2">
@@ -306,7 +306,9 @@ li {
 }
 
 @media (min-width: 1024px) {
-  .gallery-tile { aspect-ratio: 16 / 9; }
+  .gallery-tile {
+    aspect-ratio: 16 / 9;
+  }
 }
 
 

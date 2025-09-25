@@ -46,13 +46,13 @@ const timelineItems = [
     <div class="relative transition-all duration-700"
       :class="{ 'translate-y-0 opacity-100': isVisible, '-translate-y-4 opacity-0': !isVisible }" style="z-index: 1000">
       <!-- CV Button -->
-      <div class="absolute bottom-0 right-2 z-50 pointer-events-auto">
+      <!-- <div class="absolute bottom-0 right-2 z-50 pointer-events-auto">
         <a href="/static/Gaurav_Jiandani_CV.pdf" target="_self" rel="noopener" tabindex="0"
           class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 shadow-sm transition-all duration-300 hover:scale-110 hover:rotate-12 animate-bounce"
           style="animation-delay:2s; animation-duration:2s; pointer-events: auto;">
           <span class="font-bold text-xs sm:text-sm">CV</span>
         </a>
-      </div>
+      </div> -->
 
       <div class="flex items-center justify-between px-2 py-2 sm:px-4  transition-all duration-500"
         :class="{ 'translate-x-0': isVisible, '-translate-x-full': !isVisible }">
@@ -107,8 +107,7 @@ const timelineItems = [
                 class="w-5 h-5 sm:w-5 sm:h-5 rounded-full ring-2 sm:ring-4 transition-all duration-500 hover:scale-125 hover:rotate-180 hover:ring-4 animate-fadeInScale"
                 :class="item.color" :style="{ animationDelay: `${0.5 + i * 100}ms` }">
                 <template v-if="item.avatar">
-                  <img :src="item.avatar"
-                    class="rounded-full transition-transform duration-500 hover:rotate-12" />
+                  <img :src="item.avatar" class="rounded-full transition-transform duration-500 hover:rotate-12" />
                 </template>
                 <template v-else>
                   <div class="w-full h-full rounded-full flex items-center justify-center">

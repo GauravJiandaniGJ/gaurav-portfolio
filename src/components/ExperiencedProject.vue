@@ -11,7 +11,8 @@
                 <div class="flex gap-1 items-center min-h-[20px]">
                     <template v-for="tech in project.technology" :key="tech.name">
                         <img :src="tech.logo" :alt="tech.name + ' logo'" class="tech-logo" :title="tech.name"
-                            loading="lazy" />
+                            loading="lazy"
+                            style="background: #ffffff !important; background-color: #ffffff !important;" />
                     </template>
                 </div>
 
@@ -96,13 +97,18 @@ defineProps({
 
     }
 
-    .tech-logo {
-    width: 24px;
-    /* height: 18px; */
-    min-width: 15px;
-    min-height: 15px;
-    /* max-width: 24px; */
-    max-height: 10px;
+    .project-card .tech-logo {
+        width: 24px !important;
+        /* height: 18px; */
+        min-width: 15px !important;
+        min-height: 15px !important;
+        /* max-width: 24px; */
+        max-height: 10px !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        border-radius: 4px !important;
+        box-shadow: 0 2px 8px 0 rgba(60, 60, 60, 0.07) !important;
+        border: 1px solid #e6e6e6 !important;
     }
 }
 
@@ -110,31 +116,44 @@ html {
     scroll-behavior: smooth;
 }
 
-.tech-logo {
-    width: 34px;
+.project-card .tech-logo {
+    width: 34px !important;
     /* height: 18px; */
-    min-width: 15px;
-    min-height: 15px;
+    min-width: 15px !important;
+    min-height: 15px !important;
     /* max-width: 24px; */
-    max-height: 20px;
+    max-height: 20px !important;
     -o-object-fit: contain;
     object-fit: contain;
-    background: #fff;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
     border-radius: 4px !important;
-    box-shadow: 0 2px 8px 0 rgba(60, 60, 60, 0.07);
-    border: 1px solid #e6e6e6;
+    box-shadow: 0 2px 8px 0 rgba(60, 60, 60, 0.07) !important;
+    border: 1px solid #e6e6e6 !important;
     display: inline-block;
     transition: transform 0.18s cubic-bezier(.32, 2, .55, .27), box-shadow 0.18s;
     vertical-align: middle;
     /* For better logo visibility */
-    padding: 1px;
+    padding: 1px !important;
 }
 
-.tech-logo:hover {
+.project-card .tech-logo:hover {
     transform: scale(1.03);
     box-shadow: 0 4px 16px 0 rgba(60, 60, 60, 0.17);
     z-index: 2;
     border-color: #38bdf8;
-    background: #f8fafc;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+/* Force white background for tech logos - highest specificity */
+.project-card img.tech-logo {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+}
+
+.project-card img.tech-logo:hover {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
 }
 </style>

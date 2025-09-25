@@ -1,6 +1,29 @@
 export default [
     {
         id: 1,
+        title: 'SmartRez',
+        url: 'https://www.smartrezbooking.com/',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'Redis', logo: '/static/Redis.png' },
+            { name: 'React', logo: '/static/React.png' }
+        ],
+        productSite: 'SaaS · Booking & Resource Management',
+        reference: 'Ashwin Sureshkumar',
+        description: [
+            {
+                id: 1,
+                content: 'Designed and implemented the slot availability engine with overlapping bookings, group capacity restrictions, blackout periods, and rescheduling workflows—powering dozens of operators on a shared multi-tenant platform.'
+            },
+            {
+                id: 2,
+                content: 'Architected real-time inventory and pricing logic with seasonal/promotional rate sheets, and built admin tools for booking management, resource maintenance, and internal communications.'
+            }
+        ],
+        logo: '/static/SmartRez.png',
+    },
+    {
+        id: 2,
         title: 'WPD',
         url: 'https://apps.shopify.com/wholesale-pricing-discount',
         technology: [
@@ -23,7 +46,7 @@ export default [
         logo: '/static/wpd.webp',
     },
     {
-        id: 2,
+        id: 3,
         title: 'Vebcommerce',
         url: 'https://www.vebcommerce.com',
         technology: [
@@ -46,7 +69,7 @@ export default [
         logo: '/static/vebcommerce.webp'
     },
     {
-        id: 3,
+        id: 4,
         title: 'AReceivables',
         url: 'https://www.areceivables.com',
         technology: [
@@ -70,7 +93,7 @@ export default [
         logo: '/static/areceivables.png'
     },
     {
-        id: 4,
+        id: 5,
         title: 'ProjectX',
         technology: [
             { name: 'Rasa', logo: '/static/Rasa.jpg' },
@@ -91,7 +114,7 @@ export default [
         logo: '/static/projectx.png'
     },
     {
-        id: 5,
+        id: 6,
         title: 'Repsorder',
         url: 'https://www.salesreporderform.com',
         technology: [
@@ -112,7 +135,7 @@ export default [
         logo: '/static/repsorder.png'
     },
     {
-        id: 6,
+        id: 7,
         title: 'SAR Contractor',
         technology: [
             { name: 'Vue', logo: '/static/Vue.png' },
@@ -136,7 +159,7 @@ export default [
         logo: '/static/sar3.png'
     },
     {
-        id: 7,
+        id: 8,
         title: 'ClearGlass',
         url: 'https://www.clearglass.com',
         reference: 'Ritesh Singhania',
@@ -157,7 +180,7 @@ export default [
         logo: '/static/clearglass.png'
     },
     {
-        id: 8,
+        id: 9,
         title: 'Plexus MD',
         url: 'https://www.plexusmd.com',
         technology: [
@@ -176,21 +199,5 @@ export default [
             { id: 1, src: '/static/plexusmd/plexusmd1.png' }
         ],
         logo: '/static/plexusmd.png'
-    },
-    {
-        id: 9,
-        title: 'ClaritEx',
-        technology: [
-            { name: 'Angular', logo: '/static/Angular.png' }
-        ],
-        reference: 'Ritesh Singhania',
-        productSite: 'Data Analytics',
-        description: [
-            { id: 1, content: 'Worked on contractual basis with Simplitium on Application demonstrating analytical data' },
-            { id: 2, content: 'Used redux pattern to carry out data used to build a chart widget bookmarked which was later used at reporting section to display in report' },
-            { id: 3, content: 'Built and presented reporting section of ClaritEx on 10th day after joining without any prior experience in angular.' }
-        ],
-        images: null,
-        logo: '/static/claritex.png'
     }
 ];
