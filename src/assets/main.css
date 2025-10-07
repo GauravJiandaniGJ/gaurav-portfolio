@@ -1,2 +1,65 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
+
+/* Theme-aware CSS variables */
+:root {
+  --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-bg-primary: #ffffff;
+  --theme-bg-secondary: #f9fafb;
+  --theme-text-primary: #111827;
+  --theme-text-secondary: #6b7280;
+  --theme-border: #e5e7eb;
+}
+
+.dark {
+  --theme-bg-primary: #111827;
+  --theme-bg-secondary: #1f2937;
+  --theme-text-primary: #f9fafb;
+  --theme-text-secondary: #9ca3af;
+  --theme-border: #374151;
+}
+
+/* Smooth theme transitions */
+* {
+  transition: var(--theme-transition);
+}
+
+/* Theme-aware scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--theme-bg-secondary);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--theme-text-secondary);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-primary);
+}
+
+/* Theme transition animations */
+.theme-transition {
+  transition: var(--theme-transition);
+}
+
+/* Focus styles for accessibility */
+.focus-visible:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Theme-aware selection */
+::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.dark ::selection {
+  background-color: #60a5fa;
+  color: #111827;
+}

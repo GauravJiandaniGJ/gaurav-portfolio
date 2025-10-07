@@ -1,20 +1,45 @@
 import { createStore } from 'vuex'
 
+// Auto-adaptive theme detection
+function getInitialTheme() {
+    // Clear any existing theme preference to force auto-adaptation
+    localStorage.removeItem('theme')
+    localStorage.removeItem('darkMode')
+
+    // Auto-adapt to device theme
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark'
+    }
+
+    return 'light'
+}
+
+// Legacy support for old darkMode localStorage
 const darkModeLS = localStorage.getItem('darkMode')
-const initialDarkMode = darkModeLS === null ? false : JSON.parse(darkModeLS)
+if (darkModeLS !== null) {
+    const oldDarkMode = JSON.parse(darkModeLS)
+    localStorage.setItem('theme', oldDarkMode ? 'dark' : 'light')
+    localStorage.removeItem('darkMode')
+}
 
 export default createStore({
     state: {
-        darkMode: initialDarkMode
+        theme: getInitialTheme()
+    },
+    getters: {
+        isDarkMode: (state) => state.theme === 'dark',
+        isLightMode: (state) => state.theme === 'light'
     },
     mutations: {
-        toggleDarkMode (state) {
-            state.darkMode = !state.darkMode
-            localStorage.setItem('darkMode', JSON.stringify(state.darkMode))
+        setTheme(state, theme) {
+            if (theme === 'light' || theme === 'dark') {
+                state.theme = theme
+                localStorage.setItem('theme', theme)
+            }
         },
-        setDarkMode (state, value) {
-            state.darkMode = value
-            localStorage.setItem('darkMode', JSON.stringify(state.darkMode))
+        toggleTheme(state) {
+            state.theme = state.theme === 'light' ? 'dark' : 'light'
+            localStorage.setItem('theme', state.theme)
         }
     }
 })

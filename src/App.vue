@@ -7,16 +7,25 @@ import Footer from './components/Footer.vue'
 
 const store = useStore()
 const sidebarOpen = ref(false)
+
 function toggleSidebar () {
   sidebarOpen.value = !sidebarOpen.value
 }
 
-const isDarkModeOn = computed(() => store.state.darkMode)
-function updateHtmlDarkMode (dark) {
-  document.documentElement.classList.toggle('dark', dark)
+// Theme management
+const isDarkMode = computed(() => store.getters.isDarkMode)
+
+function updateHtmlTheme() {
+  const isDark = isDarkMode.value
+  document.documentElement.classList.toggle('dark', isDark)
+  document.documentElement.setAttribute('data-theme', store.state.theme)
 }
-onMounted(() => updateHtmlDarkMode(isDarkModeOn.value))
-watch(isDarkModeOn, updateHtmlDarkMode, { immediate: true })
+
+onMounted(() => {
+  updateHtmlTheme()
+})
+
+watch(isDarkMode, updateHtmlTheme, { immediate: true })
 </script>
 
 <template>

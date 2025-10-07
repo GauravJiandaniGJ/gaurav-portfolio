@@ -2,10 +2,10 @@
 import { ref, computed } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter, useRoute } from 'vue-router'
+import ThemeToggle from './ThemeToggle.vue'
 
 const store = useStore()
-const isDarkModeOn = computed(() => store.state.darkMode)
-const toggleDarkMode = () => store.commit('toggleDarkMode')
+const isDarkMode = computed(() => store.getters.isDarkMode)
 
 const navItems = [
     { text: "Experiences", section: "experiences" },
@@ -76,29 +76,10 @@ function scrollToSectionWithOffset (sectionId, offset = 0) {
                 </span>
             </div>
 
-            <!-- RIGHT: Nav + Dark Toggle -->
+            <!-- RIGHT: Nav + Theme Toggle -->
             <div class="flex-1 flex items-center justify-end space-x-1 sm:space-x-2">
-                <!-- Dark Mode Toggle -->
-                <button @click="toggleDarkMode"
-                    class="inline-flex items-center justify-center rounded-full transition focus:outline-none hover:bg-[#f2f2f2] dark:hover:bg-gray-700">
-                    <span class="sr-only">Toggle dark mode</span>
-                    <transition name="fade" mode="out-in">
-                        <svg v-if="!isDarkModeOn" key="light"
-                            class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-300 transition-all duration-300"
-                            viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M2.03009 12.42C2.39009 17.57 6.76009 21.76 11.9901 21.99C15.6801 22.15 18.9801 20.43 20.9601 17.72C21.7801 16.61 21.3401 15.87 19.9701 16.12C19.3001 16.24 18.6101 16.29 17.8901 16.26C13.0001 16.06 9.00009 11.97 8.98009 7.13996C8.97009 5.83996 9.24009 4.60996 9.73009 3.48996C10.2701 2.24996 9.62009 1.65996 8.37009 2.18996C4.41009 3.85996 1.70009 7.84996 2.03009 12.42Z"
-                                stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-
-                        <svg v-else key="dark" class="w-5 h-5 sm:w-7 sm:h-7 text-yellow-400" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2" fill="none" />
-                            <path stroke="currentColor" stroke-width="2"
-                                d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.364 6.364l-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0-1.414 1.414M7.05 16.95l-1.414 1.414" />
-                        </svg>
-                    </transition>
-                </button>
+                <!-- Theme Toggle -->
+                <ThemeToggle />
 
                 <!-- Desktop Nav Items -->
                 <div class="hidden md:flex items-center space-x-0.5 sm:space-x-1 ml-2 sm:ml-6">

@@ -1,36 +1,6 @@
 export default [
     {
         id: 1,
-        title: 'SmartRez',
-        url: 'https://www.smartrezbooking.com/',
-        technology: [
-            { name: 'Laravel', logo: '/static/Laravel.svg' },
-            { name: 'Redis', logo: '/static/Redis.png' },
-            { name: 'React', logo: '/static/React.png' }
-        ],
-        productSite: 'SaaS · Booking & Resource Management',
-        reference: 'Ashwin Sureshkumar',
-        description: [
-            {
-                id: 1,
-                content: 'Designed and implemented the slot availability engine with overlapping bookings, group capacity restrictions, blackout periods, and rescheduling workflows while powering dozens of operators on a shared multi-tenant platform.'
-            },
-            {
-                id: 2,
-                content: 'Architected real-time inventory and pricing logic with seasonal/promotional rate sheets, and built admin tools for booking management, resource maintenance, and internal communications.'
-            }
-        ],
-        images: [
-            { id: 1, src: '/static/SZAssestCL.png' },
-            { id: 2, src: '/static/SZBooking.png' },
-            { id: 3, src: '/static/SZDashboard.png' },
-            { id: 4, src: '/static/SZLanding.png' },
-            { id: 5, src: '/static/SZLogin.png' }
-        ],
-        logo: '/static/SmartRez.png',
-    },
-    {
-        id: 2,
         title: 'WPD',
         url: 'https://apps.shopify.com/wholesale-pricing-discount',
         technology: [
@@ -48,6 +18,22 @@ export default [
             {
                 id: 2,
                 content: 'Implemented a cost-effective tree data structure within Redis and developed customer APIs using Flask to ensure a response time of under 2 seconds utilized by 100,000 customers on a daily basis.'
+            },
+            {
+                id: 3,
+                content: 'Led migration from monolith to modular Laravel microservices, now powering 12K+ Shopify merchants and 600K+ users.'
+            },
+            {
+                id: 4,
+                content: 'Migrated over 60 million records during refactor without any downtime.'
+            },
+            {
+                id: 5,
+                content: 'Helped grow ARR from 40K to 2M by delivering high-impact features.'
+            },
+            {
+                id: 6,
+                content: 'Scaled engineering team from 6 → 30 pre-acquisition, then integrated into 250+ team post-acquisition.'
             }
         ],
         images: [
@@ -57,7 +43,7 @@ export default [
         logo: '/static/wpd.webp',
     },
     {
-        id: 3,
+        id: 2,
         title: 'Vebcommerce',
         url: 'https://www.vebcommerce.com',
         technology: [
@@ -80,7 +66,7 @@ export default [
         logo: '/static/vebcommerce.webp'
     },
     {
-        id: 4,
+        id: 3,
         title: 'AReceivables',
         url: 'https://www.areceivables.com',
         technology: [
@@ -107,7 +93,7 @@ export default [
         logo: '/static/areceivables.png'
     },
     {
-        id: 5,
+        id: 4,
         title: 'ProjectX',
         technology: [
             { name: 'Rasa', logo: '/static/Rasa.jpg' },
@@ -128,7 +114,7 @@ export default [
         logo: '/static/projectx.png'
     },
     {
-        id: 6,
+        id: 5,
         title: 'Repsorder',
         url: 'https://www.salesreporderform.com',
         technology: [
@@ -149,7 +135,7 @@ export default [
         logo: '/static/repsorder.png'
     },
     {
-        id: 7,
+        id: 6,
         title: 'SAR Contractor',
         technology: [
             { name: 'Vue', logo: '/static/Vue.png' },
@@ -173,7 +159,7 @@ export default [
         logo: '/static/sar3.png'
     },
     {
-        id: 8,
+        id: 7,
         title: 'ClearGlass',
         url: 'https://www.clearglass.com',
         reference: 'Ritesh Singhania',
@@ -194,7 +180,7 @@ export default [
         logo: '/static/clearglass.png'
     },
     {
-        id: 9,
+        id: 8,
         title: 'Plexus MD',
         url: 'https://www.plexusmd.com',
         technology: [
@@ -213,5 +199,28 @@ export default [
             { id: 1, src: '/static/plexusmd/plexusmd1.png' }
         ],
         logo: '/static/plexusmd.png'
+    },
+    {
+        id: 9,
+        title: 'ClaritEx',
+        technology: [
+            { name: 'Angular', logo: '/static/Angular.png' }
+        ],
+        productSite: 'Data Analytics',
+        reference: 'Simplitium',
+        description: [
+            {
+                id: 1,
+                content: 'Worked on contractual basis with Simplitium on Application development and data analytics solutions.'
+            },
+            {
+                id: 2,
+                content: 'Used redux pattern to carry out data used to build a chart widget for data visualization and analytics dashboard.'
+            }
+        ],
+        images: [
+            { id: 1, src: '/static/claritex.png' }
+        ],
+        logo: '/static/claritex.png'
     }
 ];

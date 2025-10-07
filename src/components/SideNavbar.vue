@@ -1,12 +1,14 @@
 <script setup>
 import { computed } from 'vue'
+import { useStore } from 'vuex'
 import profileImg from '/static/profile.jpeg'
 
 const props = defineProps({
   drawer: { type: Boolean, required: true }
 })
 
-const isDark = computed(() => document.documentElement.classList.contains('dark'))
+const store = useStore()
+const isDark = computed(() => store.getters.isDarkMode)
 const currentYearMinus1996 = computed(() => new Date().getFullYear() - 1996)
 const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400'
 </script>
@@ -45,13 +47,15 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
           </span>
         </div>
       </div>
+
+
       <!-- Info list -->
       <div class="px-2 sm:px-6 mt-3">
         <ul class="divide-y divide-gray-200 dark:divide-gray-700">
           <!-- PHONE -->
           <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
             <span
-              :class="iconClass + ' transition-transform transition-colors duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -70,7 +74,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
           <!-- EMAIL -->
           <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
             <span
-              :class="iconClass + ' transition-transform transition-colors duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -89,7 +93,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
           <!-- LOCATION -->
           <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
             <span
-              :class="iconClass + ' transition-transform transition-colors duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -108,7 +112,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
           <!-- BIRTHDAY (your exact cake SVG, color via currentColor) -->
           <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
             <span
-              :class="iconClass + ' transition-transform transition-colors duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
               aria-hidden="true">
               <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
                 xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 439.639 439.639" fill="currentColor"
@@ -165,7 +169,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
           <!-- DEGREE -->
           <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
             <span
-              :class="iconClass + ' transition-transform transition-colors duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
               aria-hidden="true">
               <svg viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round"
                 stroke-linejoin="round" class="w-full h-full">
