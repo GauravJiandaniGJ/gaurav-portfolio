@@ -51,7 +51,7 @@ function scrollToSectionWithOffset (sectionId, offset = 0) {
 <template>
     <nav class="fixed top-0 z-50 w-full bg-[#f2f2f2] dark:bg-[#272727] border-b border-gray-200 dark:border-gray-600
       shadow-sm transition-colors duration-300">
-        <div class="w-full lg:max-w-screen-2xl mx-auto flex items-center px-2 sm:px-2 h-12 sm:h-15">
+        <div class="w-full lg:max-w-screen-10xl mx-auto flex items-center px-2 sm:px-2 h-12 sm:h-15">
             <!-- LEFT: Sidebar Toggle, Logo, Brand -->
             <div class="flex items-center space-x-2 flex-shrink-0">
                 <button
