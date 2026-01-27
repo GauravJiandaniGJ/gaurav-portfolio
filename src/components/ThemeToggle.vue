@@ -1,41 +1,50 @@
 <template>
-  <div class="relative">
-    <!-- Theme Toggle Button -->
-    <button
-      @click="toggleTheme"
-      class="inline-flex items-center justify-center rounded-full p-2 transition-all duration-300 focus:outline-none group"
-      :aria-label="`Switch to ${nextTheme} theme`"
-    >
-      <transition name="theme-icon" mode="out-in">
-        <!-- Light Mode Icon -->
-        <svg
-          v-if="currentTheme === 'light'"
-          key="light"
-          class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400 transition-all duration-300 group-hover:scale-110"
-          viewBox="0 0 20 20"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g transform="translate(-2 -2)">
-            <circle fill="white" cx="4" cy="4" r="4" transform="translate(8 8)"/>
-            <path d="M12,3V4M5.64,5.64l.7.7M3,12H4m1.64,6.36.7-.7M12,21V20m6.36-1.64-.7-.7M21,12H20M18.36,5.64l-.7.7M12,8a4,4,0,1,0,4,4A4,4,0,0,0,12,8Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-          </g>
-        </svg>
+  <button
+    @click="toggleTheme"
+    class="theme-toggle-btn"
+    :aria-label="`Switch to ${nextTheme} theme`"
+    :title="`Switch to ${nextTheme} mode`"
+  >
+    <transition name="theme-icon" mode="out-in">
+      <!-- Light Mode Icon (Sun) -->
+      <svg
+        v-if="currentTheme === 'light'"
+        key="light"
+        class="w-[18px] h-[18px] text-gray-600"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
 
-        <!-- Dark Mode Icon -->
-        <svg
-          v-else-if="currentTheme === 'dark'"
-          key="dark"
-          class="w-5 h-5 sm:w-6 sm:h-6 text-white transition-all duration-300 group-hover:scale-110"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M10.41 13.28C7.332 10.205 6.716 5.693 8.357 2c-1.23.41-2.256 1.23-3.281 2.256a10.399 10.399 0 0 0 0 14.768c4.102 4.102 10.46 3.897 14.562-.205 1.026-1.026 1.846-2.051 2.256-3.282-3.896 1.436-8.409.82-11.486-2.256Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
-      </transition>
-    </button>
-  </div>
+      <!-- Dark Mode Icon (Moon) -->
+      <svg
+        v-else
+        key="dark"
+        class="w-[18px] h-[18px] text-gray-300"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </transition>
+  </button>
 </template>
 
 <script setup>
@@ -56,19 +65,42 @@ function toggleTheme() {
 </script>
 
 <style scoped>
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dark .theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Icon transition */
 .theme-icon-enter-active,
 .theme-icon-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .theme-icon-enter-from {
   opacity: 0;
-  transform: rotate(-90deg) scale(0.8);
+  transform: rotate(-45deg) scale(0.8);
 }
 
 .theme-icon-leave-to {
   opacity: 0;
-  transform: rotate(90deg) scale(0.8);
+  transform: rotate(45deg) scale(0.8);
 }
-
 </style>

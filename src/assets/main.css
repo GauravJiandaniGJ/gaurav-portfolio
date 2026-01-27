@@ -1,22 +1,26 @@
 @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
 
-/* Theme-aware CSS variables */
+/* Theme-aware CSS variables - Monochromatic Grey Palette */
 :root {
   --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --theme-bg-primary: #ffffff;
-  --theme-bg-secondary: #f9fafb;
-  --theme-text-primary: #111827;
-  --theme-text-secondary: #6b7280;
-  --theme-border: #e5e7eb;
+  /* Light Mode - Clean whites and neutral greys */
+  --theme-bg-primary: #FFFFFF;
+  --theme-bg-secondary: #F4F4F5;
+  --theme-bg-elevated: #FFFFFF;
+  --theme-text-primary: #09090B;
+  --theme-text-secondary: #71717A;
+  --theme-border: #E4E4E7;
 }
 
 .dark {
-  --theme-bg-primary: #111827;
-  --theme-bg-secondary: #1f2937;
-  --theme-text-primary: #f9fafb;
-  --theme-text-secondary: #9ca3af;
-  --theme-border: #374151;
+  /* Dark Mode - True black for OLED + neutral greys */
+  --theme-bg-primary: #000000;
+  --theme-bg-secondary: #121212;
+  --theme-bg-elevated: #1E1E1E;
+  --theme-text-primary: #FFFFFF;
+  --theme-text-secondary: #A1A1AA;
+  --theme-border: #27272A;
 }
 
 /* Smooth theme transitions */
@@ -61,5 +65,77 @@
 
 .dark ::selection {
   background-color: #60a5fa;
-  color: #111827;
+  color: #000000;
+}
+
+/* ============================================
+   GLASSMORPHISM UTILITIES
+   ============================================ */
+
+/* Base glass effect - Light Mode */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Base glass effect - Dark Mode */
+.dark .glass {
+  background: rgba(18, 18, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Glass card variant - more prominent */
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .glass-card {
+  background: rgba(18, 18, 18, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Glass navbar - subtle and elegant */
+.glass-nav {
+  background: rgba(250, 250, 250, 0.85);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-nav {
+  background: rgba(0, 0, 0, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Glass hover state enhancement */
+.glass-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.dark .glass-hover:hover {
+  background: rgba(30, 30, 30, 0.85);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4);
 }

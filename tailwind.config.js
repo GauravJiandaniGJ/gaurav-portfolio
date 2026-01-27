@@ -8,8 +8,8 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                'nav-dark': '#19202c',
-                // Theme-aware colors
+                'nav-dark': '#121212',
+                // Theme-aware colors - keeping blue for accents
                 primary: {
                     50: '#eff6ff',
                     100: '#dbeafe',
@@ -22,17 +22,32 @@ module.exports = {
                     800: '#1e40af',
                     900: '#1e3a8a',
                 },
+                // Neutral monochromatic greys (0% saturation)
                 gray: {
-                    50: '#f9fafb',
-                    100: '#f3f4f6',
-                    200: '#e5e7eb',
-                    300: '#d1d5db',
-                    400: '#9ca3af',
-                    500: '#6b7280',
-                    600: '#4b5563',
-                    700: '#374151',
-                    800: '#1f2937',
-                    900: '#111827',
+                    50: '#FAFAFA',
+                    100: '#F4F4F5',
+                    200: '#E4E4E7',
+                    300: '#D4D4D8',
+                    400: '#A1A1AA',
+                    500: '#71717A',
+                    600: '#52525B',
+                    700: '#3F3F46',
+                    800: '#27272A',
+                    850: '#1E1E1E',
+                    900: '#121212',
+                    950: '#09090B',
+                },
+                green: {
+                    400: '#4ade80',
+                    500: '#22c55e',
+                    900: '#14532d',
+                },
+                blue: {
+                    300: '#93c5fd',
+                    400: '#60a5fa',
+                    500: '#3b82f6',
+                    600: '#2563eb',
+                    900: '#1e3a8a',
                 }
             },
             fontFamily: {

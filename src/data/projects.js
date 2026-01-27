@@ -1,8 +1,10 @@
 export default [
     {
         id: 1,
-        title: 'WPD',
+        title: 'B2B Pricing Engine',
+        slug: 'b2b-pricing-engine',
         url: 'https://apps.shopify.com/wholesale-pricing-discount',
+        category: 'Commerce Platform',
         technology: [
             { name: 'Laravel', logo: '/static/Laravel.svg' },
             { name: 'Redis', logo: '/static/Redis.png' },
@@ -10,18 +12,29 @@ export default [
         ],
         productSite: 'E-commerce',
         reference: 'Seth Gold',
+        // Case study fields
+        challenge: 'Transform a PHP monolith into scalable microservices while maintaining service for existing merchants',
+        outcome: 'Now powering 12K+ merchants and 600K+ end users',
+        metrics: [
+            'Migrated 60M data points to indexed clusters',
+            'Response time under 2 seconds for 100K daily customers',
+            'Zero-downtime migration from monolith to microservices',
+            '50x revenue growth over 3 years'
+        ],
+        role: 'Lead Architect & Team Lead',
+        featured: true,
         description: [
             {
                 id: 1,
-                content: 'Working in to shopify efficiently transformed a PHP app to microservices, migrating 60M data points to indexed clusters, maintaining backward compatibility leading a team of size 4.'
+                content: 'Led the transformation from PHP monolith to Laravel microservices, migrating 60M data points while maintaining backward compatibility.'
             },
             {
                 id: 2,
-                content: 'Implemented a cost-effective tree data structure within Redis and developed customer APIs using Flask to ensure a response time of under 2 seconds utilized by 100,000 customers on a daily basis.'
+                content: 'Implemented cost-effective tree data structure within Redis, achieving sub-2-second response times for 100,000 daily customers.'
             },
             {
                 id: 3,
-                content: 'Led migration from monolith to modular Laravel microservices, now powering 12K+ Shopify merchants and 600K+ users.'
+                content: 'Architecture now serves 12K+ merchants and 600K+ end users.'
             },
             {
                 id: 4,
@@ -29,7 +42,7 @@ export default [
             },
             {
                 id: 5,
-                content: 'Helped grow ARR from 40K to 2M by delivering high-impact features.'
+                content: 'Achieved 50x revenue growth over 3 years by delivering high-impact features.'
             },
             {
                 id: 6,
@@ -44,8 +57,53 @@ export default [
     },
     {
         id: 2,
+        title: 'Enterprise Capacity Management Platform',
+        slug: 'capacity-management-platform',
+        category: 'Booking & Reservations',
+        technology: [
+            { name: 'Laravel', logo: '/static/Laravel.svg' },
+            { name: 'Vue.js', logo: '/static/Vue.png' },
+            { name: 'Redis', logo: '/static/Redis.png' }
+        ],
+        productSite: 'SaaS Platform',
+        reference: 'Confidential',
+        // Case study fields
+        challenge: 'Build real-time capacity management for high-volume booking platform with complex availability rules and distributed payout reconciliation',
+        outcome: 'Processing 100,000+ daily booking requests with real-time accuracy',
+        metrics: [
+            '100K+ daily booking requests',
+            'Real-time capacity synchronization across locations',
+            'Distributed payout reconciliation system',
+            'SR&ED qualifying R&D work (government-certified innovation)'
+        ],
+        role: 'Senior Backend Engineer / Architect',
+        featured: true,
+        description: [
+            {
+                id: 1,
+                content: 'Architected real-time capacity management system handling 100,000+ daily booking requests with complex availability rules.'
+            },
+            {
+                id: 2,
+                content: 'Developed distributed payout reconciliation system qualifying for SR&ED tax credits—government-certified as genuine technical innovation.'
+            },
+            {
+                id: 3,
+                content: 'Led technical documentation efforts demonstrating scientific/experimental development methodology.'
+            }
+        ],
+        images: [
+            { id: 1, src: '/static/smartrez/smartrez1.png' },
+            { id: 2, src: '/static/smartrez/smartrez2.png' }
+        ],
+        logo: '/static/smartrez/smartrez-logo.png'
+    },
+    {
+        id: 3,
         title: 'Vebcommerce',
+        slug: 'vebcommerce',
         url: 'https://www.vebcommerce.com',
+        category: 'E-commerce Platform',
         technology: [
             { name: 'Lumen', logo: '/static/Lumen.png' },
             { name: 'Django', logo: '/static/django.svg' },
@@ -53,6 +111,16 @@ export default [
         ],
         productSite: 'E-commerce',
         reference: 'Harshit Makhija',
+        // Case study fields
+        challenge: 'Build language-agnostic microservices architecture for multi-tenant e-commerce platform',
+        outcome: 'Scalable platform serving multiple merchant clients',
+        metrics: [
+            'Team of 7 developers managed',
+            'Multi-language microservices architecture',
+            'Agile delivery methodology'
+        ],
+        role: 'Technical Lead',
+        featured: false,
         description: [
             { id: 1, content: 'Technical Lead' },
             { id: 2, content: 'Managing technical team of 7 developers' },
@@ -66,9 +134,11 @@ export default [
         logo: '/static/vebcommerce.webp'
     },
     {
-        id: 3,
+        id: 4,
         title: 'AReceivables',
+        slug: 'areceivables',
         url: 'https://www.areceivables.com',
+        category: 'Fintech',
         technology: [
             { name: 'Laravel', logo: '/static/Laravel.svg' },
             { name: 'Vue', logo: '/static/Vue.png' },
@@ -76,6 +146,15 @@ export default [
         ],
         productSite: 'Fintech',
         reference: 'Seth Gold',
+        challenge: 'Build automated accounts receivable management with intelligent payment reminders',
+        outcome: 'Streamlined B2B payment collection with automated workflows',
+        metrics: [
+            'Full-stack solo development',
+            'Automated email reminder system',
+            'Custom invoice generation'
+        ],
+        role: 'Full Stack Developer',
+        featured: false,
         description: [
             { id: 1, content: 'Sole built full stack application and hosted on DO server' },
             { id: 2, content: 'See customer\'s accounts receivable, invoices & past due orders' },
@@ -93,8 +172,10 @@ export default [
         logo: '/static/areceivables.png'
     },
     {
-        id: 4,
+        id: 5,
         title: 'ProjectX',
+        slug: 'projectx',
+        category: 'AI-ML',
         technology: [
             { name: 'Rasa', logo: '/static/Rasa.jpg' },
             { name: 'Python', logo: '/static/Python.png' },
@@ -102,6 +183,15 @@ export default [
         ],
         productSite: 'AI-ML',
         reference: 'Praveen Penumaka',
+        challenge: 'Build intelligent chatbot with CRM integration for automated customer insights',
+        outcome: 'Slack-integrated AI assistant pulling real-time HubSpot data',
+        metrics: [
+            'Rasa NLU implementation',
+            'HubSpot & Slack OAuth integration',
+            'Custom connector development'
+        ],
+        role: 'Backend Developer',
+        featured: false,
         description: [
             { id: 1, content: 'Using Rasa core nlu, built a chatbot on slack providing details from hubspot using its APIs.' },
             { id: 2, content: 'Created Django application for following microservice architecture and hosted OAuth functionalities there' },
@@ -114,15 +204,26 @@ export default [
         logo: '/static/projectx.png'
     },
     {
-        id: 5,
+        id: 6,
         title: 'Repsorder',
+        slug: 'repsorder',
         url: 'https://www.salesreporderform.com',
+        category: 'Fintech',
         technology: [
             { name: 'Laravel', logo: '/static/Laravel.svg' },
             { name: 'jQuery', logo: '/static/jQuery.png' }
         ],
         productSite: 'Fintech',
         reference: 'Seth Gold',
+        challenge: 'Build sales rep management platform with comprehensive reporting',
+        outcome: 'Streamlined sales operations with admin impersonation features',
+        metrics: [
+            'V2 product development',
+            'Sales rep reporting system',
+            'Superadmin portal'
+        ],
+        role: 'Backend Developer',
+        featured: false,
         description: [
             { id: 1, content: 'Joined while V2 release of the product' },
             { id: 2, content: 'Technology stack here was Laravel and Jquery.' },
@@ -135,8 +236,10 @@ export default [
         logo: '/static/repsorder.png'
     },
     {
-        id: 6,
+        id: 7,
         title: 'SAR Contractor',
+        slug: 'sar-contractor',
+        category: 'Enterprise Solutions',
         technology: [
             { name: 'Vue', logo: '/static/Vue.png' },
             { name: 'Laravel', logo: '/static/Laravel.svg' },
@@ -146,6 +249,15 @@ export default [
         ],
         productSite: 'Fintech',
         reference: 'Nick Hoffman, Ankit Sharma',
+        challenge: 'Build multiple enterprise solutions across different tech stacks',
+        outcome: 'Delivered AWS integrations and automation tools',
+        metrics: [
+            'Multi-project delivery',
+            'AWS CloudWatch integration',
+            'Selenium automation scripts'
+        ],
+        role: 'Senior Developer',
+        featured: false,
         description: [
             { id: 1, content: 'Worked on multiple projects with multiple teams in multiple technologies since May 2019.' },
             { id: 2, content: 'Project 1: Application catering to a client to help in his accounting from csvs thereby calculating payouts, generating reports and payments.' },
@@ -159,14 +271,25 @@ export default [
         logo: '/static/sar3.png'
     },
     {
-        id: 7,
+        id: 8,
         title: 'ClearGlass',
+        slug: 'clearglass',
         url: 'https://www.clearglass.com',
+        category: 'Fintech Analytics',
         reference: 'Ritesh Singhania',
         technology: [
             { name: 'Laravel', logo: '/static/Laravel.svg' }
         ],
         productSite: 'Fintech',
+        challenge: 'Build analytics platform backend from foundation with team mentorship',
+        outcome: 'Core analytics product powering financial insights',
+        metrics: [
+            'Backend architecture from scratch',
+            'Junior developer mentorship',
+            'Code review processes established'
+        ],
+        role: 'Senior Backend Developer',
+        featured: false,
         description: [
             { id: 1, content: 'Developed heavy-lifting backend part of core-product ClearGlass Analytics right from it\'s foundation in Laravel technology.' },
             { id: 2, content: 'Followed Agile Software Development and contributed in all steps of planning, implementation, test, monitoring and delivery.' },
@@ -180,15 +303,26 @@ export default [
         logo: '/static/clearglass.png'
     },
     {
-        id: 8,
+        id: 9,
         title: 'Plexus MD',
+        slug: 'plexus-md',
         url: 'https://www.plexusmd.com',
+        category: 'Healthtech',
         technology: [
             { name: 'React', logo: '/static/React.png' },
             { name: 'Redux', logo: '/static/Redux.png' }
         ],
         reference: 'Kinnar Shah',
         productSite: 'Healthtech / Digital Health',
+        challenge: 'Build video masterclass platform for medical education',
+        outcome: 'Medcast feature connecting doctors worldwide',
+        metrics: [
+            'React from scratch',
+            'Redux state management',
+            'Video platform integration'
+        ],
+        role: 'Frontend Developer',
+        featured: false,
         description: [
             { id: 1, content: 'College placed with an opportunity to work with 3 years old startup in medical industry that helps you connect with doctors worldwide, stay updated with the latest developments, share interesting cases, apply for jobs, courses and fellowships' },
             { id: 2, content: 'Worked on building key feature Medcast\'s (Video Masterclass in Medicine and Surgery) landing and video page of Web which was in react from scratch with full reactivity of components.' },
@@ -201,13 +335,24 @@ export default [
         logo: '/static/plexusmd.png'
     },
     {
-        id: 9,
+        id: 10,
         title: 'ClaritEx',
+        slug: 'claritex',
+        category: 'Data Analytics',
         technology: [
             { name: 'Angular', logo: '/static/Angular.png' }
         ],
         productSite: 'Data Analytics',
         reference: 'Simplitium',
+        challenge: 'Build data visualization widgets for analytics dashboard',
+        outcome: 'Interactive chart widgets for business intelligence',
+        metrics: [
+            'Angular development',
+            'Redux pattern implementation',
+            'Data visualization charts'
+        ],
+        role: 'Frontend Developer',
+        featured: false,
         description: [
             {
                 id: 1,

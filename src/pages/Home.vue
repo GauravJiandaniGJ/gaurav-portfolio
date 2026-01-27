@@ -1,7 +1,82 @@
 <template>
+  <div class="w-full flex flex-col max-w-[100vw] mx-auto scroll-smooth">
+    <!-- NEW POSITIONING STRUCTURE -->
+
+    <!-- Hero Section -->
+    <HeroSection />
+
+    <!-- Fit Assessment -->
+    <FitAssessment />
+
+    <!-- Problems Section -->
+    <ProblemsSection />
+
+    <!-- Engagement Model -->
+    <EngagementSection />
+
+    <!-- Proof/Stats -->
+    <ProofSection />
+
+    <!-- Open Source & Writing -->
+    <OpenSourceSection />
+
+    <!-- Case Studies (replaces old Experiences) -->
+    <CaseStudies />
+
+    <!-- Final CTA -->
+    <FinalCTA />
+
+    <!-- Project Drawer (keep for potential future use) -->
+    <PersonalProjectDialog
+      :isDrawerOpen="isDrawerOpen"
+      :project="personalProjectObject"
+      @close-drawer="isDrawerOpen = false"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+
+// New positioning components
+import HeroSection from '@/components/HeroSection.vue'
+import FitAssessment from '@/components/FitAssessment.vue'
+import ProblemsSection from '@/components/ProblemsSection.vue'
+import EngagementSection from '@/components/EngagementSection.vue'
+import ProofSection from '@/components/ProofSection.vue'
+import OpenSourceSection from '@/components/OpenSourceSection.vue'
+import CaseStudies from '@/components/CaseStudies.vue'
+import FinalCTA from '@/components/FinalCTA.vue'
+
+// Keep for potential future use
+import PersonalProjectDialog from '@/components/PersonalProjectDialog.vue'
+
+const route = useRoute()
+
+onMounted(async () => {
+  if (route.query.scrollTo) {
+    await nextTick()
+    setTimeout(() => {
+      const section = document.getElementById(route.query.scrollTo)
+      if (section) section.scrollIntoView({ behavior: 'smooth' })
+    }, 180)
+  }
+})
+
+const isDrawerOpen = ref(false)
+const personalProjectObject = ref({ id: 0, title: '', url: '', description: [], images: [] })
+</script>
+
+<!--
+================================================================================
+OLD CODE - COMMENTED OUT FOR REFERENCE (as per spec instructions)
+================================================================================
+
+<template>
   <div class="w-full flex flex-col gap-5 sm:gap-5 max-w-[100vw] mx-auto scroll-smooth">
 
-    <!-- EXPERIENCES -->
+    <! -- EXPERIENCES -- >
     <section id="experiences" class="px-2 sm:px-3 md:px-5">
       <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mt-10 mb-5 text-blue-600 text-center">
         Professional Experiences
@@ -17,7 +92,7 @@
 
     <div class="my-5 sm:my-10"></div>
 
-    <!-- LIVE PROJECTS -->
+    <! -- LIVE PROJECTS -- >
     <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
       <h2 class="text-2xl md:text-3xl font-bold mb-5 text-blue-600 text-center w-full">
         Live Projects
@@ -26,12 +101,9 @@
         <div v-for="project in personalProjects" :key="project.id"
           class="live-project-card flex-1 min-w-[340px] max-w-[700px] bg-[#5e7cdd] dark:bg-blue-900 rounded-lg px-5 py-5 flex flex-col items-center text-center shadow transition-transform duration-300 ease-[cubic-bezier(.65,-0.01,.3,1.01)] relative group cursor-pointer overflow-hidden"
           @click="$router.push({ name: 'live-project-detail', params: { id: project.id } })">
-          <!-- Ripple animation circle -->
           <span
             class="absolute inset-0 rounded-lg pointer-events-none z-0 group-hover:bg-blue-800/30 animate-fadeIn"></span>
-          <!-- Shine effect on hover -->
           <span class="shine"></span>
-          <!-- SVG: Only visible on hover -->
           <span class="absolute top-4 right-5 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             style="pointer-events:none;">
             <svg class="w-3 h-3 text-white drop-shadow" aria-hidden="true" fill="none" viewBox="0 0 18 18">
@@ -39,7 +111,6 @@
                 d="M15 11v4.833A1.166 1.166 0 0 1 13.833 17H2.167A1.167 1.167 0 0 1 1 15.833V4.167A1.166 1.166 0 0 1 2.167 3h4.618m4.447-2H17v5.768M9.111 8.889l7.778-7.778" />
             </svg>
           </span>
-          <!-- Card content -->
           <div
             class="font-semibold text-xl mb-2 text-white z-10 transition-all duration-300 group-hover:text-blue-300">
             {{ project.title }}
@@ -54,7 +125,7 @@
 
     <div class="my-3 sm:my-5"></div>
 
-    <!-- PARALLAX / QUOTE SECTION -->
+    <! -- PARALLAX / QUOTE SECTION -- >
     <section class="px-2 sm:px-3 md:px-5">
       <div ref="parallaxRef"
         class="relative overflow-hidden rounded-lg min-h-[180px] sm:min-h-[300px] md:min-h-[500px] shadow-sm parallax-section ripple-container"
@@ -80,14 +151,14 @@
 
     <div class="my-3 sm:my-5"></div>
 
-    <!-- TIMELINE -->
+    <! -- TIMELINE -- >
     <section id="timeline" class="px-2 sm:px-3 md:px-5">
       <Timeline />
     </section>
 
     <div class="my-3 sm:my-5"></div>
 
-    <!-- ACHIEVEMENTS -->
+    <! -- ACHIEVEMENTS -- >
     <section id="achievements" class="px-2 sm:px-3 md:px-5">
       <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 sm:mb-5 text-blue-600 text-center">
         Achievements
@@ -97,7 +168,7 @@
 
     <div class="my-3 sm:my-5"></div>
 
-    <!-- SKILLS -->
+    <! -- SKILLS -- >
     <section id="skills" class="px-2 sm:px-3 md:px-5">
       <h2 class="text-xl sm:text-2xl md:text-3xl font-semibold mb-5 sm:mb-5 text-blue-600 text-center">
         Skills
@@ -105,7 +176,6 @@
       <Rating />
     </section>
 
-    <!-- Project Drawer (leave as is if you use it for other purpose) -->
     <PersonalProjectDialog :isDrawerOpen="isDrawerOpen" :project="personalProjectObject"
       @close-drawer="isDrawerOpen = false" />
   </div>
@@ -119,7 +189,6 @@ import Timeline from '@/components/Timeline.vue'
 import Achievements from '@/components/Achievements.vue'
 import Rating from '@/components/Rating.vue'
 import projects from '@/data/projects'
-
 
 import { onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
@@ -135,7 +204,6 @@ onMounted(async () => {
     }, 180)
   }
 })
-
 
 const isDrawerOpen = ref(false)
 const personalProjectObject = ref({ id: 0, title: '', url: '', description: [], images: [] })
@@ -177,7 +245,6 @@ const personalProjects = [
   }
 ]
 
-// Ripple effect for cards
 function createRipple (event) {
   const card = event.currentTarget
   let ripple = card.querySelector('.ripple')
@@ -258,3 +325,8 @@ html {
   filter: drop-shadow(0 1px 4px #000a);
 }
 </style>
+
+================================================================================
+END OF OLD CODE
+================================================================================
+-->
