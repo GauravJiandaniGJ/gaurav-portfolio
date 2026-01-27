@@ -6,8 +6,8 @@ const cert = content.proof.certification
 
 <template>
   <section id="proof" class="py-8 sm:py-12 px-4 sm:px-4 bg-gray-50 dark:bg-gray-900/50" aria-labelledby="proof-heading">
-    <div class="max-w-5xl mx-auto">
-      <h2 id="proof-heading" class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-10 sm:mb-12">
+    <div class="max-w-7xl mx-auto">
+      <h2 id="proof-heading" class="text-xl sm:text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-10 sm:mb-12">
         {{ content.proof.sectionTitle }}
       </h2>
 
@@ -19,7 +19,7 @@ const cert = content.proof.certification
           class="text-center p-4 sm:p-6"
           role="listitem"
         >
-          <div class="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-1 sm:mb-2">
+            <div class="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1 sm:mb-2">
             {{ stat.value }}
           </div>
           <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
@@ -30,7 +30,7 @@ const cert = content.proof.certification
 
       <!-- Anthropic Claude Code Certification - SEO Optimized -->
       <article
-        class="glass-card rounded-xl p-6 sm:p-8 mb-8 sm:mb-10"
+        class="glass-card rounded-xl sm:p-8 mb-8 sm:mb-10"
         itemscope
         itemtype="https://schema.org/EducationalOccupationalCredential"
         aria-label="Professional Certification from Anthropic"
@@ -112,7 +112,7 @@ const cert = content.proof.certification
       </article>
 
       <!-- Achievements List -->
-      <div class="glass-card rounded-xl p-6 sm:p-8">
+      <div class="glass-card rounded-xl sm:p-8">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Technical Achievements</h3>
         <ul class="grid md:grid-cols-2 gap-3 sm:gap-4" role="list">
           <li

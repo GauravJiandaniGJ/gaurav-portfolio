@@ -217,7 +217,7 @@ export const siteContent = {
     title: "Let's determine if there's a fit",
     description: "I take on a limited number of engagements to ensure each gets proper attention. If you're dealing with architectural uncertainty, scaling challenges, or need senior technical judgment—let's have a focused conversation about your situation.",
     buttonText: "Request an Introduction",
-    calendlyUrl: "https://calendly.com/gauravjiandani/30min",
+    calendlyUrl: "https://calendly.com/jiandanigaurav/30min?month=2026-01",
     email: "jiandanigaurav@gmail.com"
   },
 

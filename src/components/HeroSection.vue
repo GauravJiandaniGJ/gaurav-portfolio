@@ -3,7 +3,7 @@ import { siteContent as content } from '@/data/siteContent.js'
 </script>
 
 <template>
-  <section class="min-h-[100vh] flex items-center justify-center px-2 sm:px-3 py-12 sm:py-16">
+  <section class="min-h-[100vh] flex items-center justify-center px-4 sm:px-5 py-12 sm:py-16">
     <div class="max-w-7xl mx-auto text-center">
       <!-- Main Headline -->
       <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">

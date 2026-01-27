@@ -9,7 +9,7 @@ const featuredProjects = computed(() =>
 
 <template>
   <section id="case-studies" class="py-8 sm:py-12 px-4 sm:px-4">
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
         Selected Case Studies
       </h2>
@@ -21,7 +21,7 @@ const featuredProjects = computed(() =>
         <div
           v-for="project in featuredProjects"
           :key="project.id"
-          class="glass-card glass-hover rounded-xl p-6 sm:p-8"
+          class="glass-card glass-hover rounded-xl sm:p-8"
         >
           <!-- Header -->
           <div class="flex flex-wrap items-start justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">

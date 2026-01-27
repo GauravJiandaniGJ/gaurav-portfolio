@@ -8,7 +8,7 @@ import { siteContent as content } from '@/data/siteContent.js'
       <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4 sm:mb-6">
         {{ content.finalCTA.title }}
       </h2>
-      <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-8 sm:mb-10 leading-relaxed">
+      <p class="text-sm sm:text-md text-gray-600 dark:text-gray-400 mb-8 sm:mb-10 leading-relaxed">
         {{ content.finalCTA.description }}
       </p>
 

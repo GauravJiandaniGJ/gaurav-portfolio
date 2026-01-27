@@ -4,8 +4,8 @@ import { siteContent as content } from '@/data/siteContent.js'
 
 <template>
   <section id="problems" class="py-8 sm:py-12 px-4 sm:px-4 bg-gray-50 dark:bg-gray-900/50">
-    <div class="max-w-5xl mx-auto">
-      <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-10 sm:mb-12">
+    <div class="max-w-7xl mx-auto">
+      <h2 class="text-xl sm:text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-10 sm:mb-12">
         {{ content.problems.sectionTitle }}
       </h2>
 

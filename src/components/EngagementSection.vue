@@ -4,7 +4,7 @@ import { siteContent as content } from '@/data/siteContent.js'
 
 <template>
   <section id="engagement" class="py-8 sm:py-12 px-4 sm:px-4">
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <h2 class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
         {{ content.engagement.sectionTitle }}
       </h2>

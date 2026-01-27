@@ -6,7 +6,7 @@ const openSource = content.openSource
 
 <template>
   <section id="open-source" class="py-8 sm:py-12 px-4 sm:px-4" aria-labelledby="open-source-heading">
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-7xl mx-auto">
       <h2 id="open-source-heading" class="text-2xl sm:text-3xl font-bold text-center text-gray-800 dark:text-gray-100 mb-3 sm:mb-4">
         {{ openSource.sectionTitle }}
       </h2>
@@ -78,7 +78,7 @@ const openSource = content.openSource
       </div>
 
       <!-- Writing Section -->
-      <div class="glass-card rounded-xl p-6 sm:p-8 text-center">
+      <div class="glass-card rounded-xl sm:p-8 text-center">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
           {{ openSource.writing.title }}
         </h3>

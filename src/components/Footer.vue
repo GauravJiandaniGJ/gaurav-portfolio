@@ -1,6 +1,6 @@
 <template>
     <footer class="w-full py-6 sm:py-8 px-4 sm:px-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-        <div class="max-w-5xl mx-auto">
+        <div class="max-w-7xl mx-auto">
             <!-- Bio -->
             <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed text-center mb-4 sm:mb-6">
                 {{ footer.bio }}
