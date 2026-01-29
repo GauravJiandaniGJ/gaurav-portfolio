@@ -30,7 +30,7 @@ export default [
             },
             {
                 id: 2,
-                content: 'Implemented cost-effective tree data structure within Redis, achieving sub-2-second response times for 100,000 daily customers.'
+                content: 'Implemented cost-effective tree data structure within Redis, achieving sub-2-second response times for 100K daily customers.'
             },
             {
                 id: 3,
@@ -69,7 +69,7 @@ export default [
         reference: 'Confidential',
         // Case study fields
         challenge: 'Build real-time capacity management for high-volume booking platform with complex availability rules and distributed payout reconciliation',
-        outcome: 'Processing 100,000+ daily booking requests with real-time accuracy',
+        outcome: 'Processing 100K+ daily booking requests with real-time accuracy',
         metrics: [
             '100K+ daily booking requests',
             'Real-time capacity synchronization across locations',
@@ -81,7 +81,7 @@ export default [
         description: [
             {
                 id: 1,
-                content: 'Architected real-time capacity management system handling 100,000+ daily booking requests with complex availability rules.'
+                content: 'Architected real-time capacity management system handling 100K+ daily booking requests with complex availability rules.'
             },
             {
                 id: 2,

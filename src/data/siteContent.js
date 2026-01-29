@@ -225,7 +225,7 @@ export const siteContent = {
   footer: {
     copyright: `© ${new Date().getFullYear()} Gaurav Jiandani`,
     tagline: "Principal Architect & Technical Partner",
-    bio: "Gaurav Jiandani is a senior software engineer with 9+ years building high-scale backend systems in Laravel, Python, and Vue.js. He specializes in architecture for applications handling millions of daily requests, performance optimization, and turning complex business logic into reliable software. When not building for clients, he creates practical automation tools that solve everyday friction."
+    bio: "Gaurav Jiandani is a senior software engineer with 10+ years building high-scale backend systems in Laravel, Python, and Vue.js. He specializes in architecture for applications handling millions of daily requests, performance optimization, and turning complex business logic into reliable software. When not building for clients, he creates practical automation tools that solve everyday friction."
   }
 };
 
