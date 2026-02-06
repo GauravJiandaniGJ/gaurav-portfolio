@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaurav Jiandani | Immersive Portfolio</title>
+    <meta name="description" content="Principal Architect & Technical Partner - Immersive 3D Portfolio">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-loader: #e8e8e8;
+            --bg-dark: #0a0a0a;
+            --text-dark: #333333;
+            --text-light: #ffffff;
+            --accent-pink: #c9a0b8;
+            --accent-warm: #ff9d5c;
+            --accent-orange: #ff6b35;
+            --accent-blue: #004e89;
+            --accent-purple: #8b5cf6;
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Space Grotesk', sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-loader);
+            color: var(--text-dark);
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        body.experience-active {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* LOADER */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(900px 460px at 50% 45%, rgba(201, 160, 184, 0.25), transparent 65%),
+                linear-gradient(180deg, #f0f0f0, var(--bg-loader));
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        #loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-icons {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .loader-icon {
+            stroke: #888;
+            stroke-width: 1.5;
+            fill: none;
+            opacity: 0.5;
+        }
+
+        .loader-icon.active {
+            stroke: var(--accent-pink);
+            opacity: 1;
+            filter: drop-shadow(0 10px 30px rgba(201, 160, 184, 0.25));
+        }
+
+        .start-button {
+            padding: 1rem 4rem;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            background: linear-gradient(180deg, var(--accent-pink), #b688a5);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-bottom: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 14px 50px rgba(182, 136, 165, 0.28);
+        }
+
+        .start-button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .start-button::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: radial-gradient(120px 60px at 30% 20%, rgba(255, 255, 255, 0.45), transparent 55%);
+            opacity: 0.65;
+            pointer-events: none;
+        }
+
+        .start-button:not(:disabled):hover {
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 18px 60px rgba(201, 160, 184, 0.45);
+        }
+
+        .loader-message {
+            font-size: 0.875rem;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .loader-awards {
+            display: flex;
+            gap: 1.5rem;
+            opacity: 0.4;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 0.75rem;
+        }
+
+        /* Loader progress */
+        .loader-progress {
+            width: min(440px, 84vw);
+            height: 10px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 0.5rem 0 0.25rem;
+        }
+
+        .loader-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(201, 160, 184, 0.85), rgba(182, 136, 165, 0.95));
+            transition: width 0.2s ease;
+        }
+
+        .loader-progress-text {
+            font-size: 0.75rem;
+            letter-spacing: 0.12em;
+            opacity: 0.55;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+        }
+
+        /* NAVIGATION */
+        .nav-fixed {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .nav-fixed.visible {
+            opacity: 1;
+        }
+
+        .menu-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            color: white;
+        }
+
+        .menu-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .menu-lines span {
+            width: 28px;
+            height: 2px;
+            background: currentColor;
+            transition: all 0.3s;
+        }
+
+        .menu-toggle:hover .menu-lines span:nth-child(2) {
+            width: 18px;
+        }
+
+        .menu-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        /* 3D CANVAS */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        #canvas-container.visible {
+            opacity: 1;
+        }
+
+        /* SCROLL CONTAINER - ULTRA LONG for Low Sensitivity */
+        .scroll-container {
+            position: relative;
+            z-index: 10;
+            height: 2500vh;
+            pointer-events: none;
+        }
+
+        /* UI LAYER */
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .ui-layer.visible {
+            opacity: 1;
+        }
+
+        /* TEXT PANELS - REAL UI (Glassmorphism) */
+        .text-panel {
+            position: absolute;
+            max-width: 550px;
+            padding: 2.5rem;
+            opacity: 0;
+            transform: translateY(60px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+
+            background: rgba(10, 10, 15, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow:
+                0 4px 30px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        .text-panel.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .text-panel .label {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .text-panel .label::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 1.2rem;
+            height: 1px;
+            background: var(--accent-orange);
+        }
+
+        .text-panel h1,
+        .text-panel h2 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-panel h1 {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+        }
+
+        .text-panel h2 {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+        }
+
+        /* Cinematic Text Reveal */
+        .char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .text-panel.active .char {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .text-panel p {
+            font-size: 1rem;
+            line-height: 1.8;
+            opacity: 0.85;
+            max-width: 420px;
+        }
+
+        .text-panel .stats {
+            display: flex;
+            gap: 2.5rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.6;
+            margin-top: 0.25rem;
+        }
+
+        /* Panel positions */
+        #panel-hero {
+            left: 8%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #panel-hero.active {
+            transform: translateY(-50%);
+        }
+
+        #panel-intro {
+            right: 8%;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: right;
+        }
+
+        #panel-intro.active {
+            transform: translateY(-50%);
+        }
+
+        #panel-intro p {
+            margin-left: auto;
+        }
+
+        #panel-journey {
+            left: 8%;
+            top: 45%;
+        }
+
+        #panel-architecture {
+            right: 8%;
+            top: 40%;
+            text-align: right;
+        }
+
+        #panel-architecture p {
+            margin-left: auto;
+        }
+
+        #panel-cloud {
+            left: 8%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #panel-cloud.active {
+            transform: translateY(-50%);
+        }
+
+        #panel-data {
+            right: 8%;
+            top: 45%;
+            text-align: right;
+        }
+
+        #panel-data p {
+            margin-left: auto;
+        }
+
+        #panel-skills {
+            left: 8%;
+            top: 40%;
+        }
+
+        #panel-projects {
+            right: 8%;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: right;
+        }
+
+        #panel-projects.active {
+            transform: translateY(-50%);
+        }
+
+        #panel-projects p {
+            margin-left: auto;
+        }
+
+        #panel-vision {
+            left: 8%;
+            top: 45%;
+        }
+
+        #panel-contact {
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        #panel-contact.active {
+            transform: translate(-50%, -50%);
+        }
+
+        #panel-contact p {
+            margin: 0 auto 2rem;
+        }
+
+        /* CTA BUTTON */
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.2rem 3rem;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-warm));
+            color: white;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(255, 107, 53, 0.4);
+        }
+
+        /* PROGRESS */
+        .progress-container {
+            position: fixed;
+            left: 2.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .progress-container.visible {
+            opacity: 1;
+        }
+
+        .progress-track {
+            width: 2px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-thumb {
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(180deg, var(--accent-orange), var(--accent-warm));
+            border-radius: 2px;
+            transition: height 0.15s ease-out;
+        }
+
+        .progress-label {
+            writing-mode: vertical-rl;
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.5;
+            margin-top: 1rem;
+            transform: rotate(180deg);
+        }
+
+        /* SECTION MARKERS */
+        .section-markers {
+            position: fixed;
+            right: 2.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .section-markers.visible {
+            opacity: 1;
+        }
+
+        .section-marker {
+            width: 8px;
+            height: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .section-marker::after {
+            content: attr(data-label);
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            padding-right: 1rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .section-marker:hover::after {
+            opacity: 0.6;
+        }
+
+        .section-marker:hover,
+        .section-marker.active {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+            transform: scale(1.4);
+        }
+
+        /* SCROLL HINT */
+        .scroll-hint {
+            position: fixed;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            opacity: 0;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+
+        .scroll-hint.visible {
+            opacity: 1;
+        }
+
+        .scroll-hint.hidden {
+            opacity: 0;
+        }
+
+        .scroll-hint-text {
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            opacity: 0.6;
+        }
+
+        .scroll-hint-icon {
+            width: 24px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .scroll-hint-icon::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 8px;
+            background: var(--accent-orange);
+            border-radius: 2px;
+            animation: scrollBounce 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollBounce {
+
+            0%,
+            100% {
+                top: 8px;
+                opacity: 1;
+            }
+
+            50% {
+                top: 18px;
+                opacity: 0.5;
+            }
+        }
+
+        /* TECH TAGS */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .tech-tag {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            background: rgba(255, 107, 53, 0.15);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 30px;
+            color: var(--accent-warm);
+        }
+
+        /* PROJECT CARDS */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-orange);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-item:hover {
+            transform: translateX(10px) scale(1.02);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .project-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .project-item:hover::before {
+            transform: translateX(100%);
+        }
+
+        .project-item .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .project-item .desc {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        /* RESPONSIVE - Mobile First Enhancements */
+        @media (max-width: 768px) {
+            .text-panel {
+                left: 4% !important;
+                right: 4% !important;
+                max-width: 92%;
+                text-align: left !important;
+                bottom: 12%;
+                top: auto !important;
+                transform: none !important;
+                padding: 1.5rem;
+                background: linear-gradient(to top,
+                        rgba(10, 10, 10, 0.95) 0%,
+                        rgba(10, 10, 10, 0.8) 70%,
+                        transparent 100%);
+                border-radius: 12px 12px 0 0;
+            }
+
+            .text-panel.active {
+                transform: none !important;
+            }
+
+            .text-panel p {
+                margin-left: 0 !important;
+                font-size: 0.9rem;
+                line-height: 1.6;
+            }
+
+            .text-panel h1 {
+                font-size: clamp(1.8rem, 8vw, 2.8rem);
+                margin-bottom: 1rem;
+            }
+
+            .text-panel h2 {
+                font-size: clamp(1.4rem, 6vw, 2rem);
+                margin-bottom: 1rem;
+            }
+
+            .text-panel .label {
+                font-size: 0.6rem;
+                letter-spacing: 0.3em;
+                margin-bottom: 0.75rem;
+            }
+
+            .text-panel .stats {
+                gap: 1.5rem;
+                margin-top: 1.5rem;
+                padding-top: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
+            .tech-stack {
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .tech-tag {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.65rem;
+            }
+
+            .project-list {
+                gap: 0.75rem;
+                margin-top: 1rem;
+            }
+
+            .project-item {
+                padding: 0.6rem 1rem;
+            }
+
+            .project-item .title {
+                font-size: 0.8rem;
+            }
+
+            .project-item .desc {
+                font-size: 0.65rem;
+            }
+
+            .cta-button {
+                padding: 1rem 2rem;
+                font-size: 0.75rem;
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Loader mobile adjustments */
+            .loader-icons {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 0 1rem;
+            }
+
+            .loader-icons svg {
+                width: 40px;
+                height: auto;
+            }
+
+            .start-button {
+                padding: 0.9rem 3rem;
+                font-size: 0.9rem;
+            }
+
+            .loader-message {
+                font-size: 0.75rem;
+                padding: 0 1rem;
+            }
+
+            .loader-awards {
+                font-size: 0.65rem;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            /* Navigation mobile */
+            .nav-fixed {
+                top: 1rem;
+                right: 1rem;
+            }
+
+            /* Progress bar mobile */
+            .progress-container {
+                left: 1rem;
+            }
+
+            .progress-track {
+                height: 200px;
+            }
+
+            .progress-label {
+                font-size: 0.55rem;
+            }
+
+            /* Section markers mobile */
+            .section-markers {
+                right: 1rem;
+                gap: 0.6rem;
+            }
+
+            .section-marker {
+                width: 6px;
+                height: 6px;
+            }
+
+            .section-marker::after {
+                display: none;
+            }
+
+            /* Scroll hint mobile */
+            .scroll-hint {
+                bottom: 1.5rem;
+            }
+
+            .scroll-hint-text {
+                font-size: 0.6rem;
+            }
+
+            .scroll-hint-icon {
+                width: 20px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .text-panel {
+                padding: 1rem;
+                bottom: 8%;
+            }
+
+            .text-panel h1 {
+                font-size: 1.6rem;
+            }
+
+            .text-panel h2 {
+                font-size: 1.3rem;
+            }
+
+            .text-panel p {
+                font-size: 0.85rem;
+            }
+
+            .stat-value {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: landscape) {
+            .text-panel {
+                bottom: 5%;
+                max-width: 60%;
+                left: 5% !important;
+                right: auto !important;
+            }
+
+            .text-panel h1,
+            .text-panel h2 {
+                font-size: 1.4rem;
+            }
+
+            .text-panel p {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .project-item:hover {
+                transform: none;
+            }
+
+            .project-item:active {
+                transform: scale(0.98);
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            .cta-button:hover {
+                transform: none;
+            }
+
+            .cta-button:active {
+                transform: scale(0.98);
+            }
+
+            .section-marker:hover {
+                transform: none;
+            }
+
+            .section-marker:active,
+            .section-marker.active {
+                background: var(--accent-orange);
+                border-color: var(--accent-orange);
+                transform: scale(1.3);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Protocol Warning Script -->
+    <script>
+        if (window.location.protocol === 'file:') {
+            document.body.innerHTML = `
+                <div style="font-family: sans-serif; text-align: center; margin-top: 20%; color: #333;">
+                    <h1 style="color: #e74c3c;">⚠️ Application Error</h1>
+                    <p>This immersive portfolio uses ES Modules and cannot run directly from the file system.</p>
+                    <div style="background: #f8f9fa; padding: 20px; display: inline-block; border-radius: 8px; text-align: left; margin-top: 20px;">
+                        <strong>Quick Fix:</strong><br>
+                        1. Open Terminal in the project folder<br>
+                        2. Run: <code>npm run dev</code><br>
+                        3. Open: <a href="http://localhost:5173/src/paris-immersive.html">http://localhost:5173/src/paris-immersive.html</a>
+                    </div>
+                </div>
+            `;
+            throw new Error('Using file:// protocol is not supported. Please run via local server.');
+        }
+    </script>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="loader-icons">
+            <svg class="loader-icon" width="50" height="65" viewBox="0 0 50 65">
+                <rect x="10" y="25" width="30" height="35" rx="2" />
+                <rect x="15" y="30" width="7" height="7" />
+                <rect x="28" y="30" width="7" height="7" />
+                <rect x="15" y="42" width="7" height="7" />
+                <rect x="28" y="42" width="7" height="7" />
+                <polygon points="25,5 5,25 45,25" />
+            </svg>
+            <svg class="loader-icon active" width="55" height="90" viewBox="0 0 55 90">
+                <path d="M27.5 5 L27.5 82 M18 82 L37 82" />
+                <path d="M27.5 5 C15 25 8 50 8 50 L47 50 C47 50 40 25 27.5 5" />
+                <line x1="15" y1="35" x2="40" y2="35" />
+                <line x1="18" y1="50" x2="37" y2="50" />
+            </svg>
+            <svg class="loader-icon" width="65" height="50" viewBox="0 0 65 50">
+                <circle cx="12" cy="38" r="8" />
+                <circle cx="52" cy="38" r="8" />
+                <path d="M12 38 L20 30 L45 30 L52 38" />
+                <rect x="22" y="20" width="20" height="10" rx="3" />
+                <circle cx="32" cy="12" r="6" />
+            </svg>
+            <svg class="loader-icon" width="55" height="65" viewBox="0 0 55 65">
+                <circle cx="27.5" cy="12" r="8" />
+                <circle cx="10" cy="35" r="6" />
+                <circle cx="45" cy="35" r="6" />
+                <circle cx="15" cy="55" r="6" />
+                <circle cx="40" cy="55" r="6" />
+                <line x1="27.5" y1="20" x2="10" y2="29" />
+                <line x1="27.5" y1="20" x2="45" y2="29" />
+                <line x1="10" y1="41" x2="15" y2="49" />
+                <line x1="45" y1="41" x2="40" y2="49" />
+                <line x1="15" y1="55" x2="40" y2="55" />
+            </svg>
+        </div>
+
+        <button class="start-button" id="startBtn" disabled>LOADING 0%</button>
+
+        <div class="loader-progress" aria-hidden="true">
+            <div class="loader-progress-bar" id="loaderBar"></div>
+        </div>
+        <div class="loader-progress-text" id="loaderPct">Loading 0%</div>
+        <div class="loader-progress-text" id="loaderModel">Preparing assets…</div>
+
+        <div class="loader-message">For the best experience<br>Turn your sound on / Switch to desktop</div>
+        <div class="loader-awards">
+            <span>Portfolio</span>
+            <span>•</span>
+            <span>Principal Architect</span>
+            <span>•</span>
+            <span>10+ Years</span>
+        </div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="nav-fixed" id="nav">
+        <div class="menu-toggle">
+            <div class="menu-lines"><span></span><span></span><span></span></div>
+            <span class="menu-label">menu</span>
+        </div>
+    </nav>
+
+    <!-- 3D CANVAS -->
+    <div id="canvas-container"></div>
+
+    <!-- UI LAYER -->
+    <div class="ui-layer" id="uiLayer">
+        <!-- Section 1: Hero -->
+        <div class="text-panel" id="panel-hero">
+            <span class="label">Welcome</span>
+            <h1>GAURAV<br>JIANDANI</h1>
+            <p>Principal Architect & Technical Partner crafting scalable systems and immersive digital experiences.</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">10+</div>
+                    <div class="stat-label">Years Exp</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">100K+</div>
+                    <div class="stat-label">Daily Users</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">60M+</div>
+                    <div class="stat-label">Records</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Intro -->
+        <div class="text-panel" id="panel-intro">
+            <span class="label">The Beginning</span>
+            <h2>FROM CODE<br>TO CRAFT</h2>
+            <p>A decade of transforming complex challenges into elegant solutions. Every line of code tells a story of
+                innovation.</p>
+        </div>
+
+        <!-- Section 3: Journey -->
+        <div class="text-panel" id="panel-journey">
+            <span class="label">The Road</span>
+            <h2>BUILDING<br>THE FUTURE</h2>
+            <p>From monoliths to microservices. From startups to enterprise. Each project shaped my understanding of
+                scalable architecture.</p>
+        </div>
+
+        <!-- Section 4: Architecture -->
+        <div class="text-panel" id="panel-architecture">
+            <span class="label">Architecture</span>
+            <h2>SYSTEMS<br>THAT SCALE</h2>
+            <p>Designing distributed systems that handle millions of requests. Event-driven architectures that never
+                sleep.</p>
+        </div>
+
+        <!-- Section 5: Cloud -->
+        <div class="text-panel" id="panel-cloud">
+            <span class="label">Cloud Native</span>
+            <h2>ABOVE<br>THE CLOUDS</h2>
+            <p>Multi-region deployments. Auto-scaling infrastructure. Kubernetes orchestration at global scale.</p>
+            <div class="tech-stack">
+                <span class="tech-tag">AWS</span>
+                <span class="tech-tag">Docker</span>
+                <span class="tech-tag">Kubernetes</span>
+                <span class="tech-tag">Terraform</span>
+            </div>
+        </div>
+
+        <!-- Section 6: Data -->
+        <div class="text-panel" id="panel-data">
+            <span class="label">Data</span>
+            <h2>60 MILLION<br>RECORDS</h2>
+            <p>Optimizing queries that touch billions of rows. Building data pipelines that process in real-time.</p>
+        </div>
+
+        <!-- Section 7: Skills -->
+        <div class="text-panel" id="panel-skills">
+            <span class="label">Expertise</span>
+            <h2>TECHNICAL<br>MASTERY</h2>
+            <p>Full-stack architecture with deep expertise across modern technologies.</p>
+            <div class="tech-stack">
+                <span class="tech-tag">Laravel</span>
+                <span class="tech-tag">Python</span>
+                <span class="tech-tag">Node.js</span>
+                <span class="tech-tag">React</span>
+                <span class="tech-tag">Vue.js</span>
+                <span class="tech-tag">PostgreSQL</span>
+                <span class="tech-tag">Redis</span>
+                <span class="tech-tag">Shopify</span>
+            </div>
+        </div>
+
+        <!-- Section 8: Projects -->
+        <div class="text-panel" id="panel-projects">
+            <span class="label">Impact</span>
+            <h2>REAL<br>RESULTS</h2>
+            <div class="project-list">
+                <div class="project-item">
+                    <div>
+                        <div class="title">E-Commerce Platform</div>
+                        <div class="desc">100K+ daily active users</div>
+                    </div>
+                </div>
+                <div class="project-item">
+                    <div>
+                        <div class="title">SaaS Analytics</div>
+                        <div class="desc">99.9% uptime, sub-100ms responses</div>
+                    </div>
+                </div>
+                <div class="project-item">
+                    <div>
+                        <div class="title">Enterprise API</div>
+                        <div class="desc">50M+ API calls daily</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 9: Vision -->
+        <div class="text-panel" id="panel-vision">
+            <span class="label">Vision</span>
+            <h2>SCALABLE<br>EXCELLENCE</h2>
+            <p>Building systems that don't just work—they thrive under pressure. Architecture that anticipates
+                tomorrow's demands.</p>
+        </div>
+
+        <!-- Section 10: Contact -->
+        <div class="text-panel" id="panel-contact">
+            <span class="label">Connect</span>
+            <h2>LET'S BUILD<br>TOGETHER</h2>
+            <p>Ready to transform your vision into reality?</p>
+            <a href="mailto:jiandanigaurav@gmail.com" class="cta-button">
+                <span>Start a Project</span>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 10h12M12 6l4 4-4 4" />
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-track">
+            <div class="progress-thumb" id="progressThumb"></div>
+        </div>
+        <div class="progress-label">Scroll</div>
+    </div>
+
+    <!-- SECTION MARKERS - 10 sections -->
+    <div class="section-markers" id="sectionMarkers">
+        <div class="section-marker active" data-section="0" data-label="Welcome"></div>
+        <div class="section-marker" data-section="1" data-label="Beginning"></div>
+        <div class="section-marker" data-section="2" data-label="Journey"></div>
+        <div class="section-marker" data-section="3" data-label="Architecture"></div>
+        <div class="section-marker" data-section="4" data-label="Cloud"></div>
+        <div class="section-marker" data-section="5" data-label="Data"></div>
+        <div class="section-marker" data-section="6" data-label="Skills"></div>
+        <div class="section-marker" data-section="7" data-label="Projects"></div>
+        <div class="section-marker" data-section="8" data-label="Vision"></div>
+        <div class="section-marker" data-section="9" data-label="Contact"></div>
+    </div>
+
+    <!-- SCROLL HINT -->
+    <div class="scroll-hint" id="scrollHint">
+        <div class="scroll-hint-icon"></div>
+        <div class="scroll-hint-text">Scroll to explore</div>
+    </div>
+
+    <!-- SCROLL CONTAINER -->
+    <div class="scroll-container" id="scrollContainer"></div>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+        import { RGBELoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/RGBELoader.js';
+        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/DRACOLoader.js';
+        import { siteContent } from './data/siteContent.js';
+
+        console.log('🚀 Script starting (Module Mode)...');
+
+        // State
+        const State = { started: false, progress: 0, section: 0, isMobile: window.innerWidth < 768 };
+
+        // Elements
+        const loader = document.getElementById('loader');
+        const startBtn = document.getElementById('startBtn');
+        const nav = document.getElementById('nav');
+        const canvasContainer = document.getElementById('canvas-container');
+        const uiLayer = document.getElementById('uiLayer');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressThumb = document.getElementById('progressThumb');
+        const sectionMarkers = document.getElementById('sectionMarkers');
+        const scrollHint = document.getElementById('scrollHint');
+        const markers = document.querySelectorAll('.section-marker');
+        const loaderBar = document.getElementById('loaderBar');
+        const loaderPct = document.getElementById('loaderPct');
+        const loaderModel = document.getElementById('loaderModel');
+
+
+        // Mouse Tracking (keep only for camera parallax; raycast targets reduced)
+        const mouse = new THREE.Vector2();
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Cinematic Text Splitter - preserves line breaks
+        function splitText() {
+            document.querySelectorAll('.text-panel h1, .text-panel h2').forEach(el => {
+                const html = el.innerHTML;
+                const lines = html.split(/<br\s*\/?>/gi);
+                let charIndex = 0;
+
+                const processedLines = lines.map(line => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = line;
+                    const text = tempDiv.textContent || tempDiv.innerText || '';
+                    return text.split('').map((char) => {
+                        const delay = charIndex * 0.03;
+                        charIndex++;
+                        if (char === ' ') return `<span class="char" style="transition-delay:${delay}s">&nbsp;</span>`;
+                        return `<span class="char" style="transition-delay:${delay}s">${char}</span>`;
+                    }).join('');
+                });
+
+                el.innerHTML = processedLines.join('<br>');
+            });
+        }
+
+        // Panels
+        const panels = {
+            hero: document.getElementById('panel-hero'),
+            intro: document.getElementById('panel-intro'),
+            journey: document.getElementById('panel-journey'),
+            architecture: document.getElementById('panel-architecture'),
+            cloud: document.getElementById('panel-cloud'),
+            data: document.getElementById('panel-data'),
+            skills: document.getElementById('panel-skills'),
+            projects: document.getElementById('panel-projects'),
+            vision: document.getElementById('panel-vision'),
+            contact: document.getElementById('panel-contact')
+        };
+
+        // Three.js Setup
+        let scene, camera, renderer, composer, bloomPass;
+        let eiffelTower, scooter, particles, serverRacks, dataSpheres, codeBlocks, cityGroup, groundMesh;
+
+        // Scene groups tracking (visibility by section)
+        const groups = {
+            city: null,
+            eiffel: null,
+            particles: null,
+            scooter: null,
+            serverRacks: null,
+            dataSpheres: null,
+            codeBlocks: null
+        };
+
+        // Materials - PBR Realism
+        const MATERIALS = {
+            asphalt: new THREE.MeshStandardMaterial({
+                color: 0x151515,
+                roughness: 0.95,
+                metalness: 0.03
+            }),
+            limestone: new THREE.MeshStandardMaterial({
+                color: 0x7f7569,
+                roughness: 0.92,
+                metalness: 0.0
+            }),
+            zinc: new THREE.MeshStandardMaterial({
+                color: 0x353942,
+                roughness: 0.6,
+                metalness: 0.4
+            }),
+            iron: new THREE.MeshStandardMaterial({
+                color: 0x2b2b2b,
+                roughness: 0.7,
+                metalness: 0.4
+            }),
+            glass: new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0.1,
+                roughness: 0.05,
+                transmission: 0.9,
+                thickness: 0.5,
+            }),
+            emissiveGreen: new THREE.MeshStandardMaterial({
+                color: 0x00ff00,
+                emissive: 0x00ff00,
+                emissiveIntensity: 2
+            }),
+            emissivePurple: new THREE.MeshStandardMaterial({
+                color: 0x8b5cf6,
+                roughness: 0.2,
+                metalness: 0.8,
+                emissive: 0x4c1d95,
+                emissiveIntensity: 0.8
+            })
+        };
+
+        // GLTF Loading
+        const gltfLoader = new GLTFLoader();
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
+        gltfLoader.setDRACOLoader(dracoLoader);
+
+        const modelLoadingState = {
+            totalModels: 5, // eiffel, scooter, building1-3 (building4 removed)
+            loadedModels: 0,
+            currentModelProgress: 0,
+            ready: false
+        };
+
+
+        const loadedModels = {
+            eiffelTower: null,
+            scooter: null,
+            buildings: []
+        };
+
+        function setLoaderProgress(pct) {
+            const clamped = Math.max(0, Math.min(100, pct));
+            if (loaderBar) loaderBar.style.width = `${clamped}%`;
+            if (loaderPct) loaderPct.textContent = `Loading ${Math.round(clamped)}%`;
+            if (startBtn && !modelLoadingState.ready) startBtn.textContent = `LOADING ${Math.round(clamped)}%`;
+        }
+
+        function computeOverallProgress() {
+            const base = (modelLoadingState.loadedModels / modelLoadingState.totalModels) * 100;
+            const current = (modelLoadingState.currentModelProgress / modelLoadingState.totalModels);
+            return Math.min(100, base + current);
+        }
+
+        const ASSET_BASE_URL = '';
+
+        // If you want local dev, keep it empty '' or switch by environment.
+
+        function assetUrl(p) {
+            // allows '/file.glb' or 'file.glb'
+            const clean = p.startsWith('/') ? p : `/${p}`;
+            return ASSET_BASE_URL ? `${ASSET_BASE_URL}${clean}` : clean;
+        }
+
+        function loadModel(path, name) {
+            return new Promise((resolve) => {
+                const url = assetUrl(path);
+                if (loaderModel) loaderModel.textContent = `Loading: ${name}`;
+
+                gltfLoader.load(
+                    url,
+                    (gltf) => {
+                        modelLoadingState.loadedModels++;
+                        modelLoadingState.currentModelProgress = 0;
+                        console.log(`✅ Model loaded: ${name}`);
+                        setLoaderProgress(computeOverallProgress());
+                        resolve(gltf);
+                    },
+                    (progress) => {
+                        if (progress.lengthComputable) {
+                            modelLoadingState.currentModelProgress = (progress.loaded / progress.total) * 100;
+                            setLoaderProgress(computeOverallProgress());
+                        }
+                    },
+                    (error) => {
+                        console.warn(`⚠️ Failed to load model ${name}:`, error);
+                        if (loaderModel) loaderModel.textContent = `Failed: ${name} (skipping)`;
+
+                        modelLoadingState.loadedModels++;
+                        modelLoadingState.currentModelProgress = 0;
+                        setLoaderProgress(computeOverallProgress());
+                        resolve(null);
+                    }
+                );
+            });
+        }
+
+
+
+        async function loadAllModels() {
+            console.log('🔄 Loading 3D models...');
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.textContent = 'LOADING 0%';
+            }
+
+            const [eiffelGltf, scooterGltf, building1, building2, building3] = await Promise.all([
+                loadModel('/eiffel-tower.glb', 'Eiffel Tower'),
+                loadModel('/scooter.glb', 'Scooter'),
+                loadModel('/static/building1.glb', 'Building 1'),
+                loadModel('/static/building2.glb', 'Building 2'),
+                loadModel('/static/building3.glb', 'Building 3')
+            ]);
+
+            loadedModels.eiffelTower = eiffelGltf;
+            loadedModels.scooter = scooterGltf;
+            loadedModels.buildings = [building1, building2, building3].filter(Boolean);
+
+
+            modelLoadingState.ready = true;
+            setLoaderProgress(100);
+
+            if (startBtn) {
+                startBtn.textContent = 'START';
+                startBtn.disabled = false;
+            }
+            console.log(`✅ Loaded ${loadedModels.buildings.length} building models`);
+        }
+
+        // -------------------------
+        // NORMALIZATION HELPERS (FIX #1: building size + alignment)
+        // -------------------------
+        function normalizeToBaseline(object3D, opts = {}) {
+            const {
+                targetHeight = 120,     // baseline height for city buildings
+                clampMin = 0.05,
+                clampMax = 50
+            } = opts;
+
+            // Wrap to avoid destroying authored transforms inside the model
+            const wrapper = new THREE.Group();
+            wrapper.add(object3D);
+
+            wrapper.updateMatrixWorld(true);
+
+            const box = new THREE.Box3().setFromObject(wrapper);
+            const size = box.getSize(new THREE.Vector3());
+
+            const safeY = size.y || 1;
+            let scale = targetHeight / safeY;
+            scale = THREE.MathUtils.clamp(scale, clampMin, clampMax);
+
+            wrapper.scale.setScalar(scale);
+            wrapper.updateMatrixWorld(true);
+
+            // Recompute after scaling for correct grounding / centering
+            const box2 = new THREE.Box3().setFromObject(wrapper);
+            const center2 = box2.getCenter(new THREE.Vector3());
+
+            // Center X/Z and ground Y
+            wrapper.position.x += -center2.x;
+            wrapper.position.z += -center2.z;
+            wrapper.position.y += -box2.min.y;
+
+            wrapper.updateMatrixWorld(true);
+
+            const boxFinal = new THREE.Box3().setFromObject(wrapper);
+            const sizeFinal = boxFinal.getSize(new THREE.Vector3());
+
+            return { wrapper, box: boxFinal, size: sizeFinal, scale };
+        }
+
+        function makeProxyBuilding(size, baseMat) {
+            const w = Math.max(10, size.x);
+            const h = Math.max(20, size.y);
+            const d = Math.max(10, size.z);
+
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const mesh = new THREE.Mesh(geo, baseMat);
+            mesh.castShadow = false;
+            mesh.receiveShadow = true;
+            mesh.position.y = h / 2;
+            return mesh;
+        }
+
+        // -------------------------
+        // REAL GROUND (FIX: "real land")
+        // -------------------------
+        function createGround() {
+            // Procedural ground texture (asphalt + dirt + subtle vignetting)
+            const c = document.createElement('canvas');
+            c.width = 1024;
+            c.height = 1024;
+            const ctx = c.getContext('2d');
+
+            // Base
+            ctx.fillStyle = '#141414';
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // Noise speckles (cheap realism)
+            for (let i = 0; i < 22000; i++) {
+                const x = Math.random() * 1024;
+                const y = Math.random() * 1024;
+                const a = Math.random() * 0.06;
+                ctx.fillStyle = `rgba(255,255,255,${a})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+
+            // Dirt edges
+            const grad = ctx.createRadialGradient(512, 512, 80, 512, 512, 520);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(30,20,10,0.35)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // Subtle road ring
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.arc(512, 512, 290, 0, Math.PI * 2);
+            ctx.stroke();
+
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(6, 6);
+
+            const mat = new THREE.MeshStandardMaterial({
+                map: tex,
+                roughness: 0.96,
+                metalness: 0.02
+            });
+
+            // Terrain geometry with subtle undulation
+            const geo = new THREE.PlaneGeometry(4500, 4500, 180, 180);
+            const pos = geo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const x = pos.getX(i);
+                const z = pos.getY(i); // NOTE: plane geom stores in XY before rotation
+                const y = Math.sin(x * 0.002) * Math.cos(z * 0.002) * 2.1;
+                pos.setZ(i, y);
+            }
+            pos.needsUpdate = true;
+            geo.computeVertexNormals();
+
+            const ground = new THREE.Mesh(geo, mat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            return ground;
+        }
+
+        // -------------------------
+        // City Generation (FIX #1 + FIX #2)
+        // - Normalize all buildings
+        // - LOD: near GLB, far proxy
+        // - Visibility culling by distance
+        // -------------------------
+        const cityInstances = [];
+        const cityColliders = []; // { x, z, r }
+        function circleIntersectsAny(x, z, r) {
+            for (const c of cityColliders) {
+                const dx = x - c.x;
+                const dz = z - c.z;
+                const rr = r + c.r;
+                if ((dx * dx + dz * dz) < (rr * rr)) return true;
+            }
+            return false;
+        }
+        function addCollider(x, z, r) {
+            cityColliders.push({ x, z, r });
+        }
+
+        function createCity() {
+            console.log('🏙️ Building City (grid blocks + collision-free)...');
+
+            cityInstances.length = 0;
+            cityColliders.length = 0;
+
+            cityGroup = new THREE.Group();
+            cityGroup.name = 'city';
+            groups.city = cityGroup;
+
+            const hasRealBuildings = loadedModels.buildings && loadedModels.buildings.length > 0;
+
+            // ---- Build templates (normalize better so they don’t look tiny)
+            const templates = [];
+            if (hasRealBuildings) {
+                for (const gltf of loadedModels.buildings) {
+                    if (!gltf || !gltf.scene) continue;
+
+                    const raw = gltf.scene.clone(true);
+                    raw.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.material) child.material.envMapIntensity = 0.95;
+                        }
+                    });
+
+                    // IMPORTANT: taller baseline so buildings look like real city
+                    const normalized = normalizeToBaseline(raw, { targetHeight: 115 });
+                    templates.push({ hi: normalized.wrapper, size: normalized.size });
+                }
+            }
+
+            const useFallback = templates.length === 0;
+
+            // Balanced count
+            const instances = State.isMobile ? 44 : 64;
+
+            // Proxy mat
+            const proxyBaseMat = MATERIALS.limestone.clone();
+
+            // ---- City block settings (more real-world)
+            // City center is around Eiffel at z ~ -300
+            const originZ = -320;
+            const originX = 0;
+
+            const blocksX = State.isMobile ? 4 : 5;
+            const blocksZ = State.isMobile ? 3 : 4;
+
+            const blockSize = State.isMobile ? 170 : 190;   // size of a block
+            const street = State.isMobile ? 55 : 65;        // road gap
+            const halfSpanX = ((blocksX - 1) * (blockSize + street)) / 2;
+            const halfSpanZ = ((blocksZ - 1) * (blockSize + street)) / 2;
+
+            // Each block perimeter gets a few buildings
+            const perBlock = Math.ceil(instances / (blocksX * blocksZ));
+
+            // Helper: make a building (hi model + proxy LOD)
+            function makeLODFromTemplate(t, scalar) {
+                const hi = t.hi.clone(true);
+                hi.scale.multiplyScalar(scalar);
+
+                // Ground it after scaling
+                hi.updateMatrixWorld(true);
+                const b = new THREE.Box3().setFromObject(hi);
+                hi.position.y += -b.min.y;
+
+                // Proxy
+                const proxyMat = proxyBaseMat.clone();
+                proxyMat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.10);
+                const proxy = makeProxyBuilding(t.size.clone().multiplyScalar(scalar), proxyMat);
+
+                const lod = new THREE.LOD();
+                lod.addLevel(hi, 0);
+                lod.addLevel(proxy, 520); // swap later so “back models” still look like buildings
+
+                return lod;
+            }
+
+            // ---- Place buildings around blocks, collision-free
+            let placed = 0;
+            for (let bz = 0; bz < blocksZ && placed < instances; bz++) {
+                for (let bx = 0; bx < blocksX && placed < instances; bx++) {
+
+                    // block center
+                    const cx = originX + (bx * (blockSize + street) - halfSpanX);
+                    const cz = originZ + (bz * (blockSize + street) - halfSpanZ);
+
+                    // perimeter rectangle (street-facing)
+                    const half = blockSize / 2;
+
+                    for (let k = 0; k < perBlock && placed < instances; k++) {
+                        // pick an edge (0..3)
+                        const edge = Math.floor(Math.random() * 4);
+                        const t = templates.length ? templates[Math.floor(Math.random() * templates.length)] : null;
+
+                        // mild variation only
+                        const scalar = 0.92 + Math.random() * 0.32; // 0.92 -> 1.24
+
+                        // estimate collider radius (roughly based on building footprint)
+                        const baseR = State.isMobile ? 24 : 28;
+                        const r = baseR * scalar + (Math.random() * 6);
+
+                        let x, z, rotY;
+                        const jitter = (Math.random() - 0.5) * 18;
+
+                        if (edge === 0) { // top edge
+                            x = cx + (Math.random() * blockSize - half);
+                            z = cz - half - (street * 0.25) + jitter;
+                            rotY = Math.PI; // face inward
+                        } else if (edge === 1) { // bottom
+                            x = cx + (Math.random() * blockSize - half);
+                            z = cz + half + (street * 0.25) + jitter;
+                            rotY = 0;
+                        } else if (edge === 2) { // left
+                            x = cx - half - (street * 0.25) + jitter;
+                            z = cz + (Math.random() * blockSize - half);
+                            rotY = Math.PI / 2;
+                        } else { // right
+                            x = cx + half + (street * 0.25) + jitter;
+                            z = cz + (Math.random() * blockSize - half);
+                            rotY = -Math.PI / 2;
+                        }
+
+                        // collision attempts
+                        let ok = false;
+                        for (let attempt = 0; attempt < 18; attempt++) {
+                            const ax = x + (Math.random() - 0.5) * 22;
+                            const az = z + (Math.random() - 0.5) * 22;
+                            if (!circleIntersectsAny(ax, az, r)) {
+                                x = ax; z = az;
+                                ok = true;
+                                break;
+                            }
+                        }
+                        if (!ok) continue;
+
+                        let obj;
+                        if (useFallback) {
+                            // fallback box buildings
+                            const w = 22 + Math.random() * 26;
+                            const h = 70 + Math.random() * 130;
+                            const d = 18 + Math.random() * 22;
+
+                            const mat = proxyBaseMat.clone();
+                            mat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.12);
+
+                            obj = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+                            obj.position.y = h / 2;
+                            obj.receiveShadow = true;
+                        } else {
+                            obj = makeLODFromTemplate(t, scalar);
+                        }
+
+                        obj.position.set(x, 0, z);
+                        obj.rotation.y = rotY + (Math.random() - 0.5) * 0.22;
+
+                        cityGroup.add(obj);
+                        cityInstances.push(obj);
+                        addCollider(x, z, r);
+
+                        placed++;
+                    }
+                }
+            }
+
+            scene.add(cityGroup);
+            console.log(`✅ City built: ${placed} buildings (blocks + collision-free)`);
+        }
+
+
+        // Distance-based culling (vanish logic)
+        const CULL = {
+            maxDistance: 1250,   // beyond this: invisible (zero draw)
+            checkIntervalMs: 220
+        };
+        let lastCullTime = 0;
+
+        function updateCityCulling(nowMs) {
+            if (!groups.city || !groups.city.visible) return;
+            if ((nowMs - lastCullTime) < CULL.checkIntervalMs) return;
+            lastCullTime = nowMs;
+
+            const camPos = camera.position;
+            for (const obj of cityInstances) {
+                const d = camPos.distanceTo(obj.position);
+                obj.visible = d < CULL.maxDistance;
+            }
+        }
+
+
+        function pushApart(objects, minDist = 70, iterations = 2) {
+            // Uses XZ only (ground plane). Cheap and effective.
+            for (let it = 0; it < iterations; it++) {
+                for (let i = 0; i < objects.length; i++) {
+                    for (let j = i + 1; j < objects.length; j++) {
+                        const a = objects[i], b = objects[j];
+                        if (!a || !b) continue;
+
+                        const dx = a.position.x - b.position.x;
+                        const dz = a.position.z - b.position.z;
+                        const d2 = dx * dx + dz * dz;
+                        const min2 = minDist * minDist;
+
+                        if (d2 > 0.0001 && d2 < min2) {
+                            const d = Math.sqrt(d2);
+                            const push = (minDist - d) * 0.5;
+                            const nx = dx / d, nz = dz / d;
+                            a.position.x += nx * push; a.position.z += nz * push;
+                            b.position.x -= nx * push; b.position.z -= nz * push;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // --- Content Injection (keep yours) ---
+        function injectContent() {
+            if (!siteContent) return;
+            const heroP = document.querySelector('#panel-hero p');
+            if (heroP) heroP.innerText = siteContent.hero?.subheadline || heroP.innerText;
+
+            const stats = document.querySelectorAll('.stat-value');
+            if (siteContent.proof?.stats?.length >= 3) {
+                if (stats[0]) stats[0].innerText = siteContent.proof.stats[0].value;
+                if (stats[1]) stats[1].innerText = siteContent.proof.stats[1].value;
+                if (stats[2]) stats[2].innerText = siteContent.proof.stats[2].value;
+            }
+
+            const projPanel = document.querySelector('#panel-projects .project-list');
+            if (projPanel && siteContent.openSource?.projects?.length) {
+                projPanel.innerHTML = '';
+                siteContent.openSource.projects.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = 'project-item';
+                    item.innerHTML = `<div><div class="title">${p.title}</div><div class="desc">${(p.description || '').substring(0, 60)}...</div></div>`;
+                    projPanel.appendChild(item);
+                });
+            }
+
+            const contactBtn = document.querySelector('#panel-contact .cta-button');
+            const contactLabel = document.querySelector('#panel-contact .cta-button span');
+            if (siteContent.finalCTA?.calendlyUrl && contactBtn) {
+                contactBtn.href = siteContent.finalCTA.calendlyUrl;
+                if (contactLabel) contactLabel.innerText = "Book Introduction";
+            }
+
+            splitText();
+        }
+
+        // Eiffel Tower (use loaded model, no double-load)
+        function createRealisticEiffelTower() {
+            eiffelTower = new THREE.Group();
+
+            if (loadedModels.eiffelTower && loadedModels.eiffelTower.scene) {
+                const model = loadedModels.eiffelTower.scene.clone(true);
+
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) child.material.envMapIntensity = 1.0;
+                    }
+                });
+
+                // Normalize to expected hero scale
+                // Slightly bigger Eiffel to dominate skyline
+                const normalized = normalizeToBaseline(model, { targetHeight: 380 });
+
+                eiffelTower.add(normalized.wrapper);
+            } else {
+                // fallback procedural
+                const mat = MATERIALS.iron;
+                const legHeight = 150;
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i * Math.PI / 2) + Math.PI / 4;
+                    const legGroup = new THREE.Group();
+                    const legGeo = new THREE.CylinderGeometry(2, 6, legHeight, 4);
+                    const leg = new THREE.Mesh(legGeo, mat);
+                    leg.position.y = legHeight / 2;
+                    legGroup.add(leg);
+                    legGroup.position.set(Math.cos(angle) * 55, 0, Math.sin(angle) * 55);
+                    legGroup.lookAt(0, 300, 0);
+                    legGroup.rotateX(Math.PI / 8);
+                    eiffelTower.add(legGroup);
+                }
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(70, 4, 70), mat);
+                p1.position.y = 55;
+                eiffelTower.add(p1);
+                const midGeo = new THREE.CylinderGeometry(15, 35, 90, 4);
+                const mid = new THREE.Mesh(midGeo, mat);
+                mid.position.y = 105;
+                eiffelTower.add(mid);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(45, 4, 45), mat);
+                p2.position.y = 150;
+                eiffelTower.add(p2);
+                const topGeo = new THREE.CylinderGeometry(4, 15, 120, 4);
+                const top = new THREE.Mesh(topGeo, mat);
+                top.position.y = 210;
+                eiffelTower.add(top);
+                const p3 = new THREE.Mesh(new THREE.BoxGeometry(20, 3, 20), mat);
+                p3.position.y = 270;
+                eiffelTower.add(p3);
+                const spire = new THREE.Mesh(new THREE.ConeGeometry(2, 40, 8), mat);
+                spire.position.y = 290;
+                eiffelTower.add(spire);
+            }
+
+            // Beacon
+            const beacon = new THREE.Mesh(
+                new THREE.SphereGeometry(3, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xffaa00 })
+            );
+            beacon.position.y = 310;
+            eiffelTower.add(beacon);
+
+            const spot = new THREE.SpotLight(0xffaa00, 4.2, 400, 0.3, 0.5, 1);
+            spot.position.set(0, 305, 0);
+            spot.target.position.set(0, 1000, 0);
+            eiffelTower.add(spot);
+            eiffelTower.userData.spot = spot;
+
+            eiffelTower.position.set(0, 0, -300);
+            scene.add(eiffelTower);
+            groups.eiffel = eiffelTower;
+        }
+
+        function createCloudSection() {
+            serverRacks = new THREE.Group();
+            serverRacks.visible = false;
+            groups.serverRacks = serverRacks;
+
+            const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.45, metalness: 0.85 });
+
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const rack = new THREE.Mesh(new THREE.BoxGeometry(15, 60, 10), metalMat);
+                    rack.position.set(-80 + col * 40, 30, -800 + row * 30);
+                    rack.castShadow = true;
+                    rack.receiveShadow = true;
+
+                    const door = new THREE.Mesh(new THREE.PlaneGeometry(13, 58), MATERIALS.glass);
+                    door.position.z = 5.1;
+                    rack.add(door);
+
+                    for (let i = 0; i < 10; i++) {
+                        const led = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 1), MATERIALS.emissiveGreen);
+                        led.position.set(0, -25 + i * 5, 4);
+                        rack.add(led);
+                    }
+
+                    serverRacks.add(rack);
+                }
+            }
+            scene.add(serverRacks);
+        }
+
+        // Data spheres (keep interactive; small count)
+        const raycaster = new THREE.Raycaster();
+        let hoveredObject = null;
+
+        function createDataSection() {
+            dataSpheres = new THREE.Group();
+            dataSpheres.visible = false;
+            groups.dataSpheres = dataSpheres;
+
+            const sphereCount = State.isMobile ? 12 : 24;
+
+            for (let i = 0; i < sphereCount; i++) {
+                const glassMat = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    metalness: 0.1,
+                    roughness: 0.05,
+                    transmission: 0.9,
+                    thickness: 0.5,
+                    emissive: 0x000000,
+                    emissiveIntensity: 0
+                });
+
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 4, 28, 28), glassMat);
+
+                const coreMat = MATERIALS.emissivePurple.clone();
+                const core = new THREE.Mesh(new THREE.SphereGeometry(1 + Math.random(), 16, 16), coreMat);
+                sphere.add(core);
+
+                const angle = (i / sphereCount) * Math.PI * 2;
+                const radius = 60 + Math.random() * 40;
+                sphere.position.set(Math.cos(angle) * radius, 50 + Math.random() * 60, -900 + Math.sin(angle) * radius);
+
+                sphere.userData = {
+                    type: 'dataSphere',
+                    angle,
+                    radius,
+                    speed: 0.1 + Math.random() * 0.2,
+                    yOffset: sphere.position.y,
+                    originalScale: sphere.scale.clone(),
+                    originalEmissive: 0x000000,
+                    index: i
+                };
+
+                dataSpheres.add(sphere);
+            }
+            scene.add(dataSpheres);
+        }
+
+        function createSkillsSection() {
+            codeBlocks = new THREE.Group();
+            codeBlocks.visible = false;
+            groups.codeBlocks = codeBlocks;
+
+            const blockMat = new THREE.MeshPhysicalMaterial({
+                color: 0x00ff88,
+                transparent: true,
+                opacity: 0.6,
+                transmission: 0.5,
+                thickness: 1,
+                roughness: 0.25
+            });
+
+            const count = State.isMobile ? 12 : 18;
+            for (let i = 0; i < count; i++) {
+                const w = 5 + Math.random() * 10;
+                const block = new THREE.Mesh(new THREE.BoxGeometry(w, 2, 0.5), blockMat);
+                block.position.set(-200 + Math.random() * 100, 30 + i * 15, -500 - Math.random() * 200);
+                block.rotation.y = -0.3 + Math.random() * 0.1;
+                codeBlocks.add(block);
+            }
+            scene.add(codeBlocks);
+        }
+
+        function createScooter() {
+            scooter = new THREE.Group();
+            scooter.visible = false;
+            groups.scooter = scooter;
+
+            if (loadedModels.scooter && loadedModels.scooter.scene) {
+                const model = loadedModels.scooter.scene.clone(true);
+
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) child.material.envMapIntensity = 1.0;
+                    }
+                });
+
+                const normalized = normalizeToBaseline(model, { targetHeight: 12 });
+                scooter.add(normalized.wrapper);
+
+                const beam = new THREE.SpotLight(0xffffff, 2, 30, 0.5, 0.5);
+                beam.position.set(2, 8, 0);
+                beam.target.position.set(10, 0, 0);
+                scooter.add(beam);
+                scooter.add(beam.target);
+            } else {
+                const paintMat = new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.3, metalness: 0.7 });
+                const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+                const chromeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.9 });
+
+                const deck = new THREE.Mesh(new THREE.BoxGeometry(8, 0.8, 2.5), paintMat);
+                deck.position.y = 1.2;
+                scooter.add(deck);
+
+                const grip = new THREE.Mesh(new THREE.PlaneGeometry(6, 2), darkMat);
+                grip.rotation.x = -Math.PI / 2;
+                grip.position.y = 1.61;
+                scooter.add(grip);
+
+                const stemGroup = new THREE.Group();
+                stemGroup.position.set(3.5, 1.5, 0);
+                const joint = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2, 16), darkMat);
+                joint.rotation.z = Math.PI / 4;
+                joint.position.set(-0.5, 1, 0);
+                stemGroup.add(joint);
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 11, 16), paintMat);
+                pole.position.set(-1, 6, 0);
+                pole.rotation.z = -0.15;
+                stemGroup.add(pole);
+                scooter.add(stemGroup);
+
+                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 5.5, 16), darkMat);
+                bar.rotation.x = Math.PI / 2;
+                bar.position.set(1.5, 10.5, 0);
+                const handleNode = new THREE.Group();
+                handleNode.position.set(1.6, 11.2, 0);
+                handleNode.add(bar);
+
+                const leverGeo = new THREE.BoxGeometry(0.2, 1.5, 0.1);
+                const l1 = new THREE.Mesh(leverGeo, chromeMat);
+                l1.position.set(0, -0.5, 1.5);
+                l1.rotation.x = -0.5;
+                handleNode.add(l1);
+                const l2 = new THREE.Mesh(leverGeo, chromeMat);
+                l2.position.set(0, -0.5, -1.5);
+                l2.rotation.x = 0.5;
+                handleNode.add(l2);
+
+                const display = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+                display.position.y = 0.2;
+                handleNode.add(display);
+                scooter.add(handleNode);
+
+                const tireGeo = new THREE.TorusGeometry(1.2, 0.3, 8, 24);
+                const hubGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.4, 16);
+                hubGeo.rotateX(Math.PI / 2);
+
+                const fw = new THREE.Group();
+                fw.add(new THREE.Mesh(tireGeo, darkMat));
+                fw.add(new THREE.Mesh(hubGeo, chromeMat));
+                fw.position.set(3.5, 1.5, 0);
+                scooter.add(fw);
+
+                const bw = new THREE.Group();
+                bw.add(new THREE.Mesh(tireGeo, darkMat));
+                bw.add(new THREE.Mesh(hubGeo, chromeMat));
+                bw.position.set(-3, 1.5, 0);
+                scooter.add(bw);
+
+                const beam = new THREE.SpotLight(0xffffff, 2, 30, 0.5, 0.5);
+                beam.position.set(1.9, 8, 0);
+                beam.target.position.set(10, 0, 0);
+                scooter.add(beam);
+                scooter.add(beam.target);
+            }
+
+            scooter.position.set(-150, 0, 100);
+            scooter.rotation.y = Math.PI / 4;
+            scooter.userData = { floatOffset: Math.random() * 10 };
+            scene.add(scooter);
+        }
+
+        // Particles (performance-safe: rotate only; no per-vertex updates)
+        function createParticles() {
+            const count = State.isMobile ? 900 : 1600;
+            const pos = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 2000;
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+            const mat = new THREE.PointsMaterial({
+                color: 0xffaa44,
+                size: 1.25,
+                transparent: true,
+                opacity: 0.55,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            particles = new THREE.Points(geo, mat);
+            particles.visible = true;
+            groups.particles = particles;
+            scene.add(particles);
+        }
+
+        // Camera paths (unchanged)
+        const desktopCameraPath = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(40, 95, 360),
+            new THREE.Vector3(-90, 70, 240),
+            new THREE.Vector3(-170, 38, 120),
+            new THREE.Vector3(-40, 90, -60),
+            new THREE.Vector3(80, 160, -260),
+            new THREE.Vector3(20, 80, -520),
+            new THREE.Vector3(-120, 60, -460),
+            new THREE.Vector3(110, 90, -560),
+            new THREE.Vector3(40, 135, -280),
+            new THREE.Vector3(30, 85, 180),
+            new THREE.Vector3(40, 95, 360)
+        ]);
+        desktopCameraPath.closed = true;
+
+        const mobileCameraPath = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(20, 120, 420),
+            new THREE.Vector3(-55, 95, 300),
+            new THREE.Vector3(-95, 70, 190),
+            new THREE.Vector3(-20, 120, 20),
+            new THREE.Vector3(55, 190, -220),
+            new THREE.Vector3(15, 110, -460),
+            new THREE.Vector3(-70, 90, -420),
+            new THREE.Vector3(70, 120, -470),
+            new THREE.Vector3(20, 170, -250),
+            new THREE.Vector3(20, 110, 220),
+            new THREE.Vector3(20, 120, 420)
+        ]);
+        mobileCameraPath.closed = true;
+
+        const desktopLookAtPath = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 85, -300),
+            new THREE.Vector3(-30, 55, -120),
+            new THREE.Vector3(-120, 35, 40),
+            new THREE.Vector3(0, 75, -280),
+            new THREE.Vector3(0, 65, -520),
+            new THREE.Vector3(0, 55, -700),
+            new THREE.Vector3(-70, 45, -520),
+            new THREE.Vector3(0, 55, -600),
+            new THREE.Vector3(0, 85, -320),
+            new THREE.Vector3(0, 70, -120),
+            new THREE.Vector3(0, 85, -300)
+        ]);
+        desktopLookAtPath.closed = true;
+
+        const mobileLookAtPath = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 70, -300),
+            new THREE.Vector3(0, 55, -120),
+            new THREE.Vector3(-45, 40, 40),
+            new THREE.Vector3(0, 60, -280),
+            new THREE.Vector3(0, 50, -500),
+            new THREE.Vector3(0, 45, -660),
+            new THREE.Vector3(-40, 40, -520),
+            new THREE.Vector3(0, 45, -560),
+            new THREE.Vector3(0, 70, -320),
+            new THREE.Vector3(0, 55, -120),
+            new THREE.Vector3(0, 70, -300)
+        ]);
+        mobileLookAtPath.closed = true;
+
+
+        const getCameraPath = () => State.isMobile ? mobileCameraPath : desktopCameraPath;
+        const getLookAtPath = () => State.isMobile ? mobileLookAtPath : desktopLookAtPath;
+
+        // Visibility by section (FIX #2: show only what matters)
+        function applySectionVisibility(section) {
+            // default all off then enable relevant
+            const setV = (key, v) => { if (groups[key]) groups[key].visible = v; };
+
+            setV('city', true);
+            setV('eiffel', true);
+            setV('particles', true);
+
+            setV('serverRacks', false);
+            setV('dataSpheres', false);
+            setV('codeBlocks', false);
+
+            // Scooter only in journey-ish
+            setV('scooter', section >= 1 && section <= 2);
+
+            if (section === 4) setV('serverRacks', true);       // cloud
+            if (section === 5) setV('dataSpheres', true);       // data
+            if (section === 6) setV('codeBlocks', true);        // skills
+
+            // If deep into later sections, reduce visual clutter
+            if (section >= 7) {
+                setV('serverRacks', false);
+            }
+        }
+
+        function updatePanels() {
+            const s = State.progress;
+            const ranges = [[0, 0.09], [0.09, 0.18], [0.18, 0.28], [0.28, 0.38], [0.38, 0.48], [0.48, 0.58], [0.58, 0.68], [0.68, 0.78], [0.78, 0.88], [0.88, 1.0]];
+
+            if (!panels.hero) return;
+
+            panels.hero.classList.toggle('active', s >= ranges[0][0] && s < ranges[0][1]);
+            panels.intro.classList.toggle('active', s >= ranges[1][0] && s < ranges[1][1]);
+            panels.journey.classList.toggle('active', s >= ranges[2][0] && s < ranges[2][1]);
+            panels.architecture.classList.toggle('active', s >= ranges[3][0] && s < ranges[3][1]);
+            panels.cloud.classList.toggle('active', s >= ranges[4][0] && s < ranges[4][1]);
+            panels.data.classList.toggle('active', s >= ranges[5][0] && s < ranges[5][1]);
+            panels.skills.classList.toggle('active', s >= ranges[6][0] && s < ranges[6][1]);
+            panels.projects.classList.toggle('active', s >= ranges[7][0] && s < ranges[7][1]);
+            panels.vision.classList.toggle('active', s >= ranges[8][0] && s < ranges[8][1]);
+            panels.contact.classList.toggle('active', s >= ranges[9][0]);
+
+            const newSection = Math.min(9, Math.floor(s * 10));
+            if (newSection !== State.section) {
+                State.section = newSection;
+                applySectionVisibility(State.section);
+            }
+
+            markers.forEach((m, i) => m.classList.toggle('active', i === State.section));
+        }
+
+        function onScroll() {
+            if (!State.started) return;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollY = window.scrollY;
+
+            if (scrollY >= scrollHeight - 10) {
+                window.scrollTo(0, 10);
+                State.progress = 0;
+            } else {
+                State.progress = Math.min(scrollY / scrollHeight, 1);
+            }
+
+            if (progressThumb) progressThumb.style.height = `${State.progress * 100}%`;
+            if (scrollHint && State.progress > 0.02) scrollHint.classList.add('hidden');
+            updatePanels();
+        }
+        window.addEventListener('scroll', onScroll);
+
+        markers.forEach(m => {
+            m.addEventListener('click', () => {
+                const section = parseInt(m.dataset.section);
+                const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const target = (section / 10) * scrollHeight;
+                window.scrollTo({ top: target, behavior: 'smooth' });
+            });
+        });
+
+        const clock = new THREE.Clock();
+        let cameraPos = new THREE.Vector3();
+        let cameraTarget = new THREE.Vector3();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0b0b10, 0.00105);
+
+
+            const baseFov = State.isMobile ? 65 : 55;
+            camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 5000);
+
+            const startPos = State.isMobile ? new THREE.Vector3(0, 200, 500) : new THREE.Vector3(0, 150, 400);
+            camera.position.copy(startPos);
+            cameraPos.copy(camera.position);
+            cameraTarget.set(0, 100, -300);
+            camera.userData.baseFov = baseFov;
+
+            // Renderer (PERF: cap DPR lower, AA off on mobile)
+            renderer = new THREE.WebGLRenderer({
+                antialias: !State.isMobile,
+                alpha: true,
+                powerPreference: 'high-performance'
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, State.isMobile ? 1.2 : 1.35));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.72;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.physicallyCorrectLights = true;
+
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            canvasContainer.appendChild(renderer.domElement);
+
+            // HDRI Environment
+            new RGBELoader()
+                .setPath('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/')
+                .load('hamburg_hbf_1k.hdr', function (texture) {
+                    texture.mapping = THREE.EquirectangularReflectionMapping;
+                    scene.environment = texture;
+                    scene.background = new THREE.Color(0x050510);
+                });
+
+            // Post Processing (Bloom) - disable on mobile for huge win
+            const renderScene = new RenderPass(scene, camera);
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+
+            bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                0.35,
+                0.45,
+                0.85
+            );
+            bloomPass.enabled = !State.isMobile;
+            composer.addPass(bloomPass);
+
+            // Lighting
+            const sunLight = new THREE.DirectionalLight(0xfff0dd, 1.35);
+            sunLight.position.set(120, 520, 220);
+            sunLight.castShadow = true;
+
+            const shadowSize = State.isMobile ? 1024 : 2048;
+            sunLight.shadow.mapSize.width = shadowSize;
+            sunLight.shadow.mapSize.height = shadowSize;
+
+            // tighten shadow camera for better perf / quality
+            sunLight.shadow.camera.near = 10;
+            sunLight.shadow.camera.far = 1200;
+            sunLight.shadow.camera.left = -600;
+            sunLight.shadow.camera.right = 600;
+            sunLight.shadow.camera.top = 600;
+            sunLight.shadow.camera.bottom = -600;
+
+            scene.add(sunLight);
+
+            const fillLight = new THREE.HemisphereLight(0xddeeff, 0x222233, 1);
+            scene.add(fillLight);
+
+            // Ground (real land)
+            groundMesh = createGround();
+            scene.add(groundMesh);
+
+            // Scene assets
+            createRealisticEiffelTower();
+            createCity();
+            createCloudSection();
+            createDataSection();
+            createSkillsSection();
+            createScooter();
+            createParticles();
+
+            // Text animations
+            splitText();
+
+            // Initial section visibility
+            applySectionVisibility(0);
+
+            console.log('✨ Scene Initialized (Normalized City + LOD + Culling)');
+        }
+
+        // Hover effects ONLY for data spheres (not buildings)
+        function applyHoverEffect(object) {
+            if (!object || !object.material) return;
+            if (object.material.emissive) {
+                object.material.emissive.setHex(0xff6b35);
+                object.material.emissiveIntensity = 0.18;
+            }
+            object.scale.copy(object.userData.originalScale).multiplyScalar(1.12);
+        }
+
+        function resetHoverEffect(object) {
+            if (!object || !object.material) return;
+            if (object.material.emissive) {
+                object.material.emissive.setHex(object.userData.originalEmissive || 0x000000);
+                object.material.emissiveIntensity = 0;
+            }
+            if (object.userData.originalScale) object.scale.copy(object.userData.originalScale);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!composer) return;
+
+            const t = State.progress;
+            const elapsed = clock.getElapsedTime();
+            const nowMs = performance.now();
+
+            // Camera animation
+            if (State.started) {
+                const cameraPath = getCameraPath();
+                const lookAtPath = getLookAtPath();
+
+                const targetPos = cameraPath.getPoint(t);
+                const targetLookAt = lookAtPath.getPoint(t);
+
+                cameraPos.lerp(targetPos, 0.025);
+                cameraTarget.lerp(targetLookAt, 0.025);
+
+                camera.position.copy(cameraPos);
+
+                // Desktop parallax only
+                if (!State.isMobile) {
+                    const parallaxX = mouse.x * 20;
+                    const parallaxY = mouse.y * 20;
+                    camera.position.x += (parallaxX - camera.position.x) * 0.05;
+                    camera.position.y += (parallaxY - camera.position.y) * 0.05;
+                }
+
+                camera.lookAt(cameraTarget);
+
+                // Force LOD updates (prevents “models not loading” / wrong LOD stuck)
+                if (cityGroup) {
+                    cityGroup.traverse((o) => {
+                        if (o && o.isLOD) o.update(camera);
+                    });
+                }
+
+
+                const velocity = Math.abs(State.progress - (State.lastProgress || 0));
+                State.lastProgress = State.progress;
+
+                const baseFov = camera.userData.baseFov || 55;
+                const targetFov = baseFov + Math.min(velocity * 450, State.isMobile ? 6 : 12);
+                camera.fov += (targetFov - camera.fov) * 0.05;
+                camera.updateProjectionMatrix();
+            }
+
+            // Culling update (vanish logic)
+            updateCityCulling(nowMs);
+
+            // Raycast only when data spheres visible + desktop
+            if (State.started && !State.isMobile && groups.dataSpheres && groups.dataSpheres.visible) {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(dataSpheres.children, true);
+                if (intersects.length > 0) {
+                    const hit = intersects[0].object;
+                    const sphereRoot = hit.userData.type === 'dataSphere' ? hit : hit.parent;
+                    if (sphereRoot && sphereRoot.userData && sphereRoot.userData.type === 'dataSphere') {
+                        if (hoveredObject !== sphereRoot) {
+                            if (hoveredObject) resetHoverEffect(hoveredObject);
+                            hoveredObject = sphereRoot;
+                            applyHoverEffect(hoveredObject);
+                            document.body.style.cursor = 'pointer';
+                        }
+                    }
+                } else {
+                    if (hoveredObject) {
+                        resetHoverEffect(hoveredObject);
+                        hoveredObject = null;
+                        document.body.style.cursor = 'default';
+                    }
+                }
+            } else {
+                if (hoveredObject) {
+                    resetHoverEffect(hoveredObject);
+                    hoveredObject = null;
+                    document.body.style.cursor = 'default';
+                }
+            }
+
+            // Eiffel beacon
+            if (eiffelTower && eiffelTower.userData.spot && groups.eiffel && groups.eiffel.visible) {
+                const time = Date.now() * 0.001;
+                const spot = eiffelTower.userData.spot;
+                spot.target.position.x = Math.sin(time) * 100;
+                spot.target.position.z = Math.cos(time) * 100;
+                spot.target.updateMatrixWorld();
+            }
+
+            // Particles (rotate only)
+            if (particles && particles.visible) {
+                particles.rotation.y = elapsed * 0.003;
+            }
+
+            // Data spheres orbit
+            if (dataSpheres && dataSpheres.visible) {
+                dataSpheres.children.forEach((sphere, i) => {
+                    const a = sphere.userData.angle + elapsed * sphere.userData.speed * 0.3;
+                    sphere.position.x = Math.cos(a) * sphere.userData.radius;
+                    sphere.position.z = -900 + Math.sin(a) * sphere.userData.radius;
+                    sphere.position.y = sphere.userData.yOffset + Math.sin(elapsed * 2 + i) * 5;
+                });
+            }
+
+            // Scooter
+            if (scooter && scooter.visible) {
+                const st = (t - 0.15) / 0.17;
+                scooter.position.x = -150 + st * 200;
+                scooter.position.z = 100 - st * 100;
+                scooter.rotation.y = Math.PI / 4 + Math.sin(elapsed * 4) * 0.015;
+            }
+
+            composer.render();
+        }
+
+        // Resize handler with debouncing
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const wasMobile = State.isMobile;
+                State.isMobile = window.innerWidth < 768;
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+
+                if (wasMobile !== State.isMobile) {
+                    const newBaseFov = State.isMobile ? 65 : 55;
+                    camera.fov = newBaseFov;
+                    camera.userData.baseFov = newBaseFov;
+
+                    // bloom toggle
+                    if (bloomPass) bloomPass.enabled = !State.isMobile;
+                }
+
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, State.isMobile ? 1.2 : 1.35));
+            }, 120);
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 220);
+        });
+
+        // GPU Warm-up
+        function warmUpGPU(callback) {
+            let warmUpFrames = 0;
+            const maxWarmUpFrames = 8;
+            function warmUpLoop() {
+                if (warmUpFrames < maxWarmUpFrames) {
+                    warmUpFrames++;
+                    if (composer) composer.render();
+                    requestAnimationFrame(warmUpLoop);
+                } else callback();
+            }
+            warmUpLoop();
+        }
+
+        // Startup logic
+        let sceneReady = false;
+
+        async function initializeScene() {
+            try {
+                await loadAllModels();
+                init();
+                injectContent();
+                sceneReady = true;
+                console.log('✨ Scene ready with normalized models');
+            } catch (e) {
+                console.error("Init Error:", e);
+                if (startBtn) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'START';
+                }
+            }
+        }
+        initializeScene();
+
+        function startExperience() {
+            if (State.started) return;
+            if (!sceneReady) return;
+
+            State.started = true;
+
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.pointerEvents = 'none';
+                startBtn.textContent = 'STARTING...';
+            }
+
+            warmUpGPU(() => {
+                document.body.classList.add('experience-active');
+
+                loader.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                loader.style.opacity = '0';
+
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+
+                    requestAnimationFrame(() => {
+                        canvasContainer.style.transition = 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+                        canvasContainer.classList.add('visible');
+
+                        animate();
+
+                        setTimeout(() => nav.classList.add('visible'), 200);
+                        setTimeout(() => {
+                            progressContainer.classList.add('visible');
+                            sectionMarkers.classList.add('visible');
+                        }, 400);
+
+                        setTimeout(() => {
+                            uiLayer.classList.add('visible');
+                            if (panels.hero) panels.hero.classList.add('active');
+                        }, 600);
+
+                        setTimeout(() => scrollHint.classList.add('visible'), 1200);
+                    });
+                }, 800);
+            });
+        }
+
+        if (startBtn) {
+            startBtn.addEventListener('click', startExperience);
+            startBtn.addEventListener('touchstart', startExperience, { passive: true });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!State.started && sceneReady && (e.code === 'Space' || e.code === 'Enter')) {
+                e.preventDefault();
+                startExperience();
+            }
+        });
+
+        console.log('✅ Ready');
+    </script>
+</body>
+
+</html>
