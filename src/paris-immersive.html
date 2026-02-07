@@ -1245,11 +1245,20 @@
         import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
         import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/DRACOLoader.js';
         import { siteContent } from './data/siteContent.js';
+        import { Sky } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/objects/Sky.js';
+
 
         console.log('🚀 Script starting (Module Mode)...');
 
         // State
-        const State = { started: false, progress: 0, section: 0, isMobile: window.innerWidth < 768 };
+        const State = {
+            started: false,
+            progress: 0,
+            targetProgress: 0,  // ✅ add
+            section: 0,
+            isMobile: window.innerWidth < 768
+        };
+
 
         // Elements
         const loader = document.getElementById('loader');
@@ -1323,8 +1332,10 @@
             scooter: null,
             serverRacks: null,
             dataSpheres: null,
-            codeBlocks: null
+            codeBlocks: null,
+            clouds: null   // ✅ add this
         };
+
 
         // Materials - PBR Realism
         const MATERIALS = {
@@ -1366,7 +1377,17 @@
                 metalness: 0.8,
                 emissive: 0x4c1d95,
                 emissiveIntensity: 0.8
+            }),
+            cheapGlass: new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                roughness: 0.18,
+                metalness: 0.0,
+                transmission: 0.85,
+                thickness: 0.35,
+                ior: 1.45,
+                transparent: true
             })
+
         };
 
         // GLTF Loading
@@ -1477,23 +1498,50 @@
             console.log(`✅ Loaded ${loadedModels.buildings.length} building models`);
         }
 
+
+
+        function getTightMeshBox(root) {
+            const box = new THREE.Box3();
+            const tmpBox = new THREE.Box3();
+
+            root.updateMatrixWorld(true);
+
+            let found = false;
+            root.traverse((o) => {
+                if (!o.isMesh || !o.geometry) return;
+
+                // Ensure geometry has bounding box
+                if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                tmpBox.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+
+                box.union(tmpBox);
+                found = true;
+            });
+
+            // Fallback if model has no meshes
+            if (!found) box.setFromObject(root);
+            return box;
+        }
+
+
         // -------------------------
         // NORMALIZATION HELPERS (FIX #1: building size + alignment)
         // -------------------------
         function normalizeToBaseline(object3D, opts = {}) {
             const {
-                targetHeight = 120,     // baseline height for city buildings
-                clampMin = 0.05,
-                clampMax = 50
+                targetHeight = 150,
+                clampMin = 0.08,
+                clampMax = 80,
+                minHeightBoost = 1.15, // small model boost
             } = opts;
 
-            // Wrap to avoid destroying authored transforms inside the model
             const wrapper = new THREE.Group();
             wrapper.add(object3D);
 
             wrapper.updateMatrixWorld(true);
 
-            const box = new THREE.Box3().setFromObject(wrapper);
+            // ✅ tight box (meshes only)
+            const box = getTightMeshBox(wrapper);
             const size = box.getSize(new THREE.Vector3());
 
             const safeY = size.y || 1;
@@ -1503,22 +1551,35 @@
             wrapper.scale.setScalar(scale);
             wrapper.updateMatrixWorld(true);
 
-            // Recompute after scaling for correct grounding / centering
-            const box2 = new THREE.Box3().setFromObject(wrapper);
-            const center2 = box2.getCenter(new THREE.Vector3());
+            // ✅ re-box after scaling (tight again)
+            const box2 = getTightMeshBox(wrapper);
 
             // Center X/Z and ground Y
+            const center2 = box2.getCenter(new THREE.Vector3());
             wrapper.position.x += -center2.x;
             wrapper.position.z += -center2.z;
             wrapper.position.y += -box2.min.y;
 
             wrapper.updateMatrixWorld(true);
 
-            const boxFinal = new THREE.Box3().setFromObject(wrapper);
+            // ✅ if still “too small”, boost a bit (fix tiny building)
+            const boxFinal = getTightMeshBox(wrapper);
             const sizeFinal = boxFinal.getSize(new THREE.Vector3());
+            if (sizeFinal.y < targetHeight * 0.65) {
+                wrapper.scale.multiplyScalar(minHeightBoost);
+                wrapper.updateMatrixWorld(true);
 
-            return { wrapper, box: boxFinal, size: sizeFinal, scale };
+                const b3 = getTightMeshBox(wrapper);
+                wrapper.position.y += -b3.min.y; // reground
+                wrapper.updateMatrixWorld(true);
+            }
+
+            const finalBox = getTightMeshBox(wrapper);
+            const finalSize = finalBox.getSize(new THREE.Vector3());
+
+            return { wrapper, box: finalBox, size: finalSize, scale };
         }
+
 
         function makeProxyBuilding(size, baseMat) {
             const w = Math.max(10, size.x);
@@ -1537,67 +1598,78 @@
         // REAL GROUND (FIX: "real land")
         // -------------------------
         function createGround() {
-            // Procedural ground texture (asphalt + dirt + subtle vignetting)
-            const c = document.createElement('canvas');
-            c.width = 1024;
-            c.height = 1024;
-            const ctx = c.getContext('2d');
+            // Big plane, PBR asphalt. If texture load fails, fall back to your canvas texture.
+            const size = 6000;
 
-            // Base
-            ctx.fillStyle = '#141414';
-            ctx.fillRect(0, 0, 1024, 1024);
+            const geo = new THREE.PlaneGeometry(size, size, 1, 1);
+            geo.rotateX(-Math.PI / 2);
 
-            // Noise speckles (cheap realism)
-            for (let i = 0; i < 22000; i++) {
-                const x = Math.random() * 1024;
-                const y = Math.random() * 1024;
-                const a = Math.random() * 0.06;
-                ctx.fillStyle = `rgba(255,255,255,${a})`;
-                ctx.fillRect(x, y, 1, 1);
-            }
-
-            // Dirt edges
-            const grad = ctx.createRadialGradient(512, 512, 80, 512, 512, 520);
-            grad.addColorStop(0, 'rgba(0,0,0,0)');
-            grad.addColorStop(1, 'rgba(30,20,10,0.35)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 1024, 1024);
-
-            // Subtle road ring
-            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.arc(512, 512, 290, 0, Math.PI * 2);
-            ctx.stroke();
-
-            const tex = new THREE.CanvasTexture(c);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(6, 6);
-
-            const mat = new THREE.MeshStandardMaterial({
-                map: tex,
-                roughness: 0.96,
+            // Fallback material (if texture loading fails)
+            const fallbackMat = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,
+                roughness: 0.95,
                 metalness: 0.02
             });
 
-            // Terrain geometry with subtle undulation
-            const geo = new THREE.PlaneGeometry(4500, 4500, 180, 180);
-            const pos = geo.attributes.position;
-            for (let i = 0; i < pos.count; i++) {
-                const x = pos.getX(i);
-                const z = pos.getY(i); // NOTE: plane geom stores in XY before rotation
-                const y = Math.sin(x * 0.002) * Math.cos(z * 0.002) * 2.1;
-                pos.setZ(i, y);
-            }
-            pos.needsUpdate = true;
-            geo.computeVertexNormals();
-
-            const ground = new THREE.Mesh(geo, mat);
-            ground.rotation.x = -Math.PI / 2;
+            const ground = new THREE.Mesh(geo, fallbackMat);
             ground.receiveShadow = true;
+
+            // Try PBR textures (PolyHaven) – these URLs work client-side in browser
+            const tl = new THREE.TextureLoader();
+
+            // NOTE: You can change this set to any “asphalt” / “concrete” set you prefer.
+            // Keep it simple: color + normal + roughness is enough.
+            const urls = {
+                color: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_diff_2k.jpg',
+                normal: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_nor_gl_2k.jpg',
+                rough: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_rough_2k.jpg'
+            };
+
+            let loaded = 0;
+            const onTex = () => {
+                loaded++;
+                if (loaded < 3) return;
+
+                // Build PBR mat
+                const mat = new THREE.MeshStandardMaterial({
+                    map: maps.color,
+                    normalMap: maps.normal,
+                    roughnessMap: maps.rough,
+                    roughness: 1.0,
+                    metalness: 0.02
+                });
+
+                ground.material = mat;
+                ground.material.needsUpdate = true;
+            };
+
+            const maps = {};
+            try {
+                maps.color = tl.load(urls.color, (t) => {
+                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                    t.repeat.set(18, 18);
+                    t.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 8);
+                    onTex();
+                });
+
+                maps.normal = tl.load(urls.normal, (t) => {
+                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                    t.repeat.set(18, 18);
+                    onTex();
+                });
+
+                maps.rough = tl.load(urls.rough, (t) => {
+                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                    t.repeat.set(18, 18);
+                    onTex();
+                });
+            } catch (e) {
+                console.warn('Ground PBR load failed, using fallback:', e);
+            }
+
             return ground;
         }
+
 
         // -------------------------
         // City Generation (FIX #1 + FIX #2)
@@ -1605,9 +1677,18 @@
         // - LOD: near GLB, far proxy
         // - Visibility culling by distance
         // -------------------------
+        const EIFFEL_XZ = new THREE.Vector2(0, -300);
+        const EIFFEL_KEEP_OUT_R = 260; // adjust if needed
+
         const cityInstances = [];
         const cityColliders = []; // { x, z, r }
         function circleIntersectsAny(x, z, r) {
+            // Keep-out around Eiffel
+            const dxE = x - EIFFEL_XZ.x;
+            const dzE = z - EIFFEL_XZ.y;
+            const rrE = r + EIFFEL_KEEP_OUT_R;
+            if ((dxE * dxE + dzE * dzE) < (rrE * rrE)) return true;
+
             for (const c of cityColliders) {
                 const dx = x - c.x;
                 const dz = z - c.z;
@@ -1616,12 +1697,13 @@
             }
             return false;
         }
+
         function addCollider(x, z, r) {
             cityColliders.push({ x, z, r });
         }
 
         function createCity() {
-            console.log('🏙️ Building City (grid blocks + collision-free)...');
+            console.log('🏙️ Building City (blocks + Eiffel keep-out + better spacing)...');
 
             cityInstances.length = 0;
             cityColliders.length = 0;
@@ -1632,123 +1714,127 @@
 
             const hasRealBuildings = loadedModels.buildings && loadedModels.buildings.length > 0;
 
-            // ---- Build templates (normalize better so they don’t look tiny)
+            // ---- Templates
             const templates = [];
             if (hasRealBuildings) {
                 for (const gltf of loadedModels.buildings) {
                     if (!gltf || !gltf.scene) continue;
 
+                    // ✅ this is the building model
                     const raw = gltf.scene.clone(true);
+
+                    // Optional but recommended (reduces shimmer)
+                    improveTextureFiltering(raw);
+
                     raw.traverse((child) => {
                         if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                            if (child.material) child.material.envMapIntensity = 0.95;
+                            child.castShadow = false;
+                            child.receiveShadow = false;
+                            if (child.material) child.material.envMapIntensity = 1.0;
                         }
                     });
 
-                    // IMPORTANT: taller baseline so buildings look like real city
-                    const normalized = normalizeToBaseline(raw, { targetHeight: 115 });
+                    // Slightly taller baseline so they read like real buildings
+                    const normalized = normalizeToBaseline(raw, { targetHeight: 165 });
                     templates.push({ hi: normalized.wrapper, size: normalized.size });
                 }
+
+
             }
 
             const useFallback = templates.length === 0;
+            const instances = State.isMobile ? 46 : 72;
 
-            // Balanced count
-            const instances = State.isMobile ? 44 : 64;
-
-            // Proxy mat
             const proxyBaseMat = MATERIALS.limestone.clone();
 
-            // ---- City block settings (more real-world)
-            // City center is around Eiffel at z ~ -300
-            const originZ = -320;
-            const originX = 0;
-
-            const blocksX = State.isMobile ? 4 : 5;
-            const blocksZ = State.isMobile ? 3 : 4;
-
-            const blockSize = State.isMobile ? 170 : 190;   // size of a block
-            const street = State.isMobile ? 55 : 65;        // road gap
-            const halfSpanX = ((blocksX - 1) * (blockSize + street)) / 2;
-            const halfSpanZ = ((blocksZ - 1) * (blockSize + street)) / 2;
-
-            // Each block perimeter gets a few buildings
-            const perBlock = Math.ceil(instances / (blocksX * blocksZ));
-
-            // Helper: make a building (hi model + proxy LOD)
             function makeLODFromTemplate(t, scalar) {
                 const hi = t.hi.clone(true);
                 hi.scale.multiplyScalar(scalar);
-
-                // Ground it after scaling
                 hi.updateMatrixWorld(true);
+
+                // Ground it properly
                 const b = new THREE.Box3().setFromObject(hi);
                 hi.position.y += -b.min.y;
+                hi.updateMatrixWorld(true);
 
-                // Proxy
+                // Use FINAL size for proxy (this is the key)
+                const finalBox = new THREE.Box3().setFromObject(hi);
+                const finalSize = finalBox.getSize(new THREE.Vector3());
+
                 const proxyMat = proxyBaseMat.clone();
                 proxyMat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.10);
-                const proxy = makeProxyBuilding(t.size.clone().multiplyScalar(scalar), proxyMat);
+
+                const proxy = makeProxyBuilding(finalSize, proxyMat);
 
                 const lod = new THREE.LOD();
                 lod.addLevel(hi, 0);
-                lod.addLevel(proxy, 520); // swap later so “back models” still look like buildings
+
+                // 🔥 push proxy much farther so you don't see slabs near Eiffel
+                // Proxy only beyond culling range so it never “pops” on screen
+                lod.addLevel(proxy, CULL.maxDistance + 400);
+                // try 1400–2200 depending on your camera distances
 
                 return lod;
             }
 
-            // ---- Place buildings around blocks, collision-free
+
+            // ---- Layout (IMPORTANT: move city away from Eiffel + away from camera corridor)
+            const originX = 0;
+            const originZ = -650; // was ~-320; this is a huge improvement
+
+            const blocksX = State.isMobile ? 4 : 6;
+            const blocksZ = State.isMobile ? 3 : 5;
+
+            const blockSize = State.isMobile ? 180 : 210;
+            const street = State.isMobile ? 70 : 85;
+
+            const halfSpanX = ((blocksX - 1) * (blockSize + street)) / 2;
+            const halfSpanZ = ((blocksZ - 1) * (blockSize + street)) / 2;
+
+            const perBlock = Math.ceil(instances / (blocksX * blocksZ));
             let placed = 0;
+
             for (let bz = 0; bz < blocksZ && placed < instances; bz++) {
                 for (let bx = 0; bx < blocksX && placed < instances; bx++) {
-
-                    // block center
                     const cx = originX + (bx * (blockSize + street) - halfSpanX);
                     const cz = originZ + (bz * (blockSize + street) - halfSpanZ);
 
-                    // perimeter rectangle (street-facing)
                     const half = blockSize / 2;
 
                     for (let k = 0; k < perBlock && placed < instances; k++) {
-                        // pick an edge (0..3)
                         const edge = Math.floor(Math.random() * 4);
-                        const t = templates.length ? templates[Math.floor(Math.random() * templates.length)] : null;
+                        const scalar = 0.90 + Math.random() * 0.35;
 
-                        // mild variation only
-                        const scalar = 0.92 + Math.random() * 0.32; // 0.92 -> 1.24
-
-                        // estimate collider radius (roughly based on building footprint)
-                        const baseR = State.isMobile ? 24 : 28;
-                        const r = baseR * scalar + (Math.random() * 6);
+                        const baseR = State.isMobile ? 26 : 30;
+                        const r = baseR * scalar + (Math.random() * 8);
 
                         let x, z, rotY;
-                        const jitter = (Math.random() - 0.5) * 18;
+                        const jitter = (Math.random() - 0.5) * 22;
 
-                        if (edge === 0) { // top edge
+                        if (edge === 0) {
                             x = cx + (Math.random() * blockSize - half);
-                            z = cz - half - (street * 0.25) + jitter;
-                            rotY = Math.PI; // face inward
-                        } else if (edge === 1) { // bottom
+                            z = cz - half - (street * 0.35) + jitter;
+                            rotY = Math.PI;
+                        } else if (edge === 1) {
                             x = cx + (Math.random() * blockSize - half);
-                            z = cz + half + (street * 0.25) + jitter;
+                            z = cz + half + (street * 0.35) + jitter;
                             rotY = 0;
-                        } else if (edge === 2) { // left
-                            x = cx - half - (street * 0.25) + jitter;
+                        } else if (edge === 2) {
+                            x = cx - half - (street * 0.35) + jitter;
                             z = cz + (Math.random() * blockSize - half);
                             rotY = Math.PI / 2;
-                        } else { // right
-                            x = cx + half + (street * 0.25) + jitter;
+                        } else {
+                            x = cx + half + (street * 0.35) + jitter;
                             z = cz + (Math.random() * blockSize - half);
                             rotY = -Math.PI / 2;
                         }
 
                         // collision attempts
                         let ok = false;
-                        for (let attempt = 0; attempt < 18; attempt++) {
-                            const ax = x + (Math.random() - 0.5) * 22;
-                            const az = z + (Math.random() - 0.5) * 22;
+                        for (let attempt = 0; attempt < 24; attempt++) {
+                            const ax = x + (Math.random() - 0.5) * 30;
+                            const az = z + (Math.random() - 0.5) * 30;
+
                             if (!circleIntersectsAny(ax, az, r)) {
                                 x = ax; z = az;
                                 ok = true;
@@ -1759,10 +1845,9 @@
 
                         let obj;
                         if (useFallback) {
-                            // fallback box buildings
-                            const w = 22 + Math.random() * 26;
-                            const h = 70 + Math.random() * 130;
-                            const d = 18 + Math.random() * 22;
+                            const w = 26 + Math.random() * 30;
+                            const h = 80 + Math.random() * 170;
+                            const d = 20 + Math.random() * 26;
 
                             const mat = proxyBaseMat.clone();
                             mat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.12);
@@ -1771,11 +1856,12 @@
                             obj.position.y = h / 2;
                             obj.receiveShadow = true;
                         } else {
+                            const t = templates[Math.floor(Math.random() * templates.length)];
                             obj = makeLODFromTemplate(t, scalar);
                         }
 
                         obj.position.set(x, 0, z);
-                        obj.rotation.y = rotY + (Math.random() - 0.5) * 0.22;
+                        obj.rotation.y = rotY + (Math.random() - 0.5) * 0.18;
 
                         cityGroup.add(obj);
                         cityInstances.push(obj);
@@ -1786,17 +1872,44 @@
                 }
             }
 
+            // extra safety pass
+            pushApart(cityInstances, State.isMobile ? 78 : 92, 2);
+
             scene.add(cityGroup);
-            console.log(`✅ City built: ${placed} buildings (blocks + collision-free)`);
+            console.log(`✅ City built: ${placed} buildings (Eiffel-safe + spaced)`);
         }
+
 
 
         // Distance-based culling (vanish logic)
         const CULL = {
-            maxDistance: 1250,   // beyond this: invisible (zero draw)
+            maxDistance: 1550,
+            // beyond this: invisible (zero draw)
             checkIntervalMs: 220
         };
         let lastCullTime = 0;
+
+        function improveTextureFiltering(root) {
+            const maxAniso = renderer?.capabilities?.getMaxAnisotropy?.() || 8;
+
+            root.traverse((o) => {
+                if (!o.isMesh || !o.material) return;
+
+                const mats = Array.isArray(o.material) ? o.material : [o.material];
+                mats.forEach((m) => {
+                    ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'].forEach((k) => {
+                        const tex = m[k];
+                        if (!tex) return;
+                        tex.anisotropy = Math.min(8, maxAniso);
+                        tex.minFilter = THREE.LinearMipmapLinearFilter;
+                        tex.magFilter = THREE.LinearFilter;
+                        tex.needsUpdate = true;
+                    });
+                    m.needsUpdate = true;
+                });
+            });
+        }
+
 
         function updateCityCulling(nowMs) {
             if (!groups.city || !groups.city.visible) return;
@@ -1877,20 +1990,19 @@
 
             if (loadedModels.eiffelTower && loadedModels.eiffelTower.scene) {
                 const model = loadedModels.eiffelTower.scene.clone(true);
-
+                improveTextureFiltering(model);
                 model.traverse((child) => {
                     if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
+                        child.castShadow = false;
+                        child.receiveShadow = false;
                         if (child.material) child.material.envMapIntensity = 1.0;
                     }
                 });
 
-                // Normalize to expected hero scale
-                // Slightly bigger Eiffel to dominate skyline
-                const normalized = normalizeToBaseline(model, { targetHeight: 380 });
-
+                // ✅ normalize the actual model (not "raw")
+                const normalized = normalizeToBaseline(model, { targetHeight: 380 }); // Eiffel should be BIG
                 eiffelTower.add(normalized.wrapper);
+
             } else {
                 // fallback procedural
                 const mat = MATERIALS.iron;
@@ -1948,35 +2060,42 @@
             groups.eiffel = eiffelTower;
         }
 
-        function createCloudSection() {
-            serverRacks = new THREE.Group();
-            serverRacks.visible = false;
-            groups.serverRacks = serverRacks;
+        function createCloudLayers() {
+            const group = new THREE.Group();
+            group.name = "clouds";
 
-            const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.45, metalness: 0.85 });
+            const tl = new THREE.TextureLoader();
+            const tex = tl.load("https://threejs.org/examples/textures/sprites/cloud.png");
+            tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
 
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 5; col++) {
-                    const rack = new THREE.Mesh(new THREE.BoxGeometry(15, 60, 10), metalMat);
-                    rack.position.set(-80 + col * 40, 30, -800 + row * 30);
-                    rack.castShadow = true;
-                    rack.receiveShadow = true;
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex,
+                transparent: true,
+                opacity: 0.18,
+                depthWrite: false
+            });
 
-                    const door = new THREE.Mesh(new THREE.PlaneGeometry(13, 58), MATERIALS.glass);
-                    door.position.z = 5.1;
-                    rack.add(door);
+            const planeGeo = new THREE.PlaneGeometry(600, 350);
 
-                    for (let i = 0; i < 10; i++) {
-                        const led = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 1), MATERIALS.emissiveGreen);
-                        led.position.set(0, -25 + i * 5, 4);
-                        rack.add(led);
-                    }
-
-                    serverRacks.add(rack);
-                }
+            const count = State.isMobile ? 10 : 18;
+            for (let i = 0; i < count; i++) {
+                const p = new THREE.Mesh(planeGeo, mat.clone());
+                p.position.set(
+                    (Math.random() - 0.5) * 1800,
+                    220 + Math.random() * 220,
+                    -200 - Math.random() * 2200
+                );
+                p.rotation.y = Math.random() * Math.PI * 2;
+                p.scale.setScalar(0.8 + Math.random() * 1.6);
+                p.material.opacity = 0.10 + Math.random() * 0.18;
+                group.add(p);
             }
-            scene.add(serverRacks);
+
+            scene.add(group);
+            groups.clouds = group;
+            return group;
         }
+
 
         // Data spheres (keep interactive; small count)
         const raycaster = new THREE.Raycaster();
@@ -2061,8 +2180,8 @@
 
                 model.traverse((child) => {
                     if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
+                        child.castShadow = false;
+                        child.receiveShadow = false;
                         if (child.material) child.material.envMapIntensity = 1.0;
                     }
                 });
@@ -2177,20 +2296,79 @@
         }
 
         // Camera paths (unchanged)
+        const desktopLookAtPath = new THREE.CatmullRomCurve3([
+            // Hero / Welcome: lock to Eiffel
+            new THREE.Vector3(0, 105, -300),
+
+            // Intro: start revealing the city to the right
+            new THREE.Vector3(220, 95, -520),
+
+            // Journey: swing back across center (more “wide” feel)
+            new THREE.Vector3(120, 85, -740),
+
+            // Architecture: pan left over dense blocks
+            new THREE.Vector3(-260, 95, -680),
+
+            // Cloud: keep gaze higher + slightly further
+            new THREE.Vector3(-180, 140, -980),
+
+            // Data: focus deeper where your spheres live (around z ~ -900)
+            new THREE.Vector3(0, 120, -980),
+
+            // Skills: bias to left where codeBlocks are (x ~ -200, z ~ -500/-700)
+            new THREE.Vector3(-220, 90, -720),
+
+            // Projects: sweep right again for variety
+            new THREE.Vector3(240, 95, -760),
+
+            // Vision: ease back toward Eiffel region
+            new THREE.Vector3(120, 110, -420),
+
+            // Contact: clean centered framing
+            new THREE.Vector3(0, 115, -300),
+
+            // Close the loop
+            new THREE.Vector3(0, 105, -300)
+        ]);
+        desktopLookAtPath.closed = true;
+
+
         const desktopCameraPath = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(40, 95, 360),
-            new THREE.Vector3(-90, 70, 240),
-            new THREE.Vector3(-170, 38, 120),
-            new THREE.Vector3(-40, 90, -60),
-            new THREE.Vector3(80, 160, -260),
-            new THREE.Vector3(20, 80, -520),
-            new THREE.Vector3(-120, 60, -460),
-            new THREE.Vector3(110, 90, -560),
-            new THREE.Vector3(40, 135, -280),
-            new THREE.Vector3(30, 85, 180),
-            new THREE.Vector3(40, 95, 360)
+            // Hero / Welcome: slightly higher, tighter to Eiffel
+            new THREE.Vector3(100, 130, 520),
+
+            // Intro: keep right-side reveal
+            new THREE.Vector3(220, 130, 260),
+
+            // Journey: swing back across center
+            new THREE.Vector3(120, 110, -220),
+
+            // Architecture: pan left over dense blocks
+            new THREE.Vector3(-260, 120, -680),
+
+            // Cloud: higher, further back for scale
+            new THREE.Vector3(-180, 150, -980),
+
+            // Data: focus deeper
+            new THREE.Vector3(0, 130, -980),
+
+            // Skills: left-side bias
+            new THREE.Vector3(-220, 100, -720),
+
+            // Projects: right-side sweep
+            new THREE.Vector3(240, 100, -760),
+
+            // Vision: ease back toward Eiffel
+            new THREE.Vector3(120, 120, -420),
+
+            // Contact: centered framing
+            new THREE.Vector3(0, 125, -300),
+
+            // Close the loop
+            new THREE.Vector3(100, 130, 520)
         ]);
         desktopCameraPath.closed = true;
+
 
         const mobileCameraPath = new THREE.CatmullRomCurve3([
             new THREE.Vector3(20, 120, 420),
@@ -2207,20 +2385,6 @@
         ]);
         mobileCameraPath.closed = true;
 
-        const desktopLookAtPath = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0, 85, -300),
-            new THREE.Vector3(-30, 55, -120),
-            new THREE.Vector3(-120, 35, 40),
-            new THREE.Vector3(0, 75, -280),
-            new THREE.Vector3(0, 65, -520),
-            new THREE.Vector3(0, 55, -700),
-            new THREE.Vector3(-70, 45, -520),
-            new THREE.Vector3(0, 55, -600),
-            new THREE.Vector3(0, 85, -320),
-            new THREE.Vector3(0, 70, -120),
-            new THREE.Vector3(0, 85, -300)
-        ]);
-        desktopLookAtPath.closed = true;
 
         const mobileLookAtPath = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0, 70, -300),
@@ -2295,20 +2459,20 @@
 
         function onScroll() {
             if (!State.started) return;
+
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const scrollY = window.scrollY;
 
             if (scrollY >= scrollHeight - 10) {
                 window.scrollTo(0, 10);
-                State.progress = 0;
+                State.targetProgress = 0;
             } else {
-                State.progress = Math.min(scrollY / scrollHeight, 1);
+                State.targetProgress = Math.min(scrollY / scrollHeight, 1);
             }
 
-            if (progressThumb) progressThumb.style.height = `${State.progress * 100}%`;
-            if (scrollHint && State.progress > 0.02) scrollHint.classList.add('hidden');
-            updatePanels();
+            if (scrollHint && State.targetProgress > 0.02) scrollHint.classList.add('hidden');
         }
+
         window.addEventListener('scroll', onScroll);
 
         markers.forEach(m => {
@@ -2324,11 +2488,19 @@
         let cameraPos = new THREE.Vector3();
         let cameraTarget = new THREE.Vector3();
 
+        function createCloudSection() {
+            // If you later want clouds only in a specific section, you can toggle visibility here.
+            return createCloudLayers();
+        }
+
+
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0b0b10, 0.00105);
+            scene.fog = new THREE.FogExp2(0xbfd6e6, 0.00022);
+            createCloudLayers();
 
 
+            // 1) Camera FIRST
             const baseFov = State.isMobile ? 65 : 55;
             camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 5000);
 
@@ -2338,23 +2510,45 @@
             cameraTarget.set(0, 100, -300);
             camera.userData.baseFov = baseFov;
 
-            // Renderer (PERF: cap DPR lower, AA off on mobile)
+            // 2) Renderer SECOND
             renderer = new THREE.WebGLRenderer({
                 antialias: !State.isMobile,
                 alpha: true,
                 powerPreference: 'high-performance'
             });
+
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, State.isMobile ? 1.2 : 1.35));
+            const DPR_CAP = State.isMobile ? 1.0 : 1.15;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 0.72;
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.physicallyCorrectLights = true;
+            renderer.toneMappingExposure = 1.05;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.physicallyCorrectLights = true; // still ok in many versions, later became default-ish
+
 
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             canvasContainer.appendChild(renderer.domElement);
+
+            // 3) Composer LAST (desktop only)
+            const usePost = !State.isMobile;
+            if (usePost) {
+                composer = new EffectComposer(renderer);
+                composer.addPass(new RenderPass(scene, camera));
+
+                bloomPass = new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.35,
+                    0.45,
+                    0.85
+                );
+                composer.addPass(bloomPass);
+            } else {
+                composer = null;
+                bloomPass = null;
+            }
 
             // HDRI Environment
             new RGBELoader()
@@ -2362,41 +2556,48 @@
                 .load('hamburg_hbf_1k.hdr', function (texture) {
                     texture.mapping = THREE.EquirectangularReflectionMapping;
                     scene.environment = texture;
-                    scene.background = new THREE.Color(0x050510);
+                    scene.background = null;
                 });
 
-            // Post Processing (Bloom) - disable on mobile for huge win
-            const renderScene = new RenderPass(scene, camera);
-            composer = new EffectComposer(renderer);
-            composer.addPass(renderScene);
+            const sky = new Sky();
+            sky.scale.setScalar(450000);
+            scene.add(sky);
 
-            bloomPass = new UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
-                0.35,
-                0.45,
-                0.85
-            );
-            bloomPass.enabled = !State.isMobile;
-            composer.addPass(bloomPass);
+            // Sky uniforms
+            const sun = new THREE.Vector3();
+            const uniforms = sky.material.uniforms;
+            uniforms['turbidity'].value = 6.5;
+            uniforms['rayleigh'].value = 2.2;
+            uniforms['mieCoefficient'].value = 0.006;
+            uniforms['mieDirectionalG'].value = 0.85;
 
-            // Lighting
-            const sunLight = new THREE.DirectionalLight(0xfff0dd, 1.35);
-            sunLight.position.set(120, 520, 220);
+            // Sun position (elevation/azimuth)
+            const elevation = 38; // higher = more midday
+            const azimuth = 180;  // direction
+            const phi = THREE.MathUtils.degToRad(90 - elevation);
+            const theta = THREE.MathUtils.degToRad(azimuth);
+            sun.setFromSphericalCoords(1, phi, theta);
+            uniforms['sunPosition'].value.copy(sun);
+
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
+            sunLight.position.set(200, 650, 350);
             sunLight.castShadow = true;
 
-            const shadowSize = State.isMobile ? 1024 : 2048;
+            const shadowSize = State.isMobile ? 512 : 1024;
             sunLight.shadow.mapSize.width = shadowSize;
             sunLight.shadow.mapSize.height = shadowSize;
 
-            // tighten shadow camera for better perf / quality
             sunLight.shadow.camera.near = 10;
-            sunLight.shadow.camera.far = 1200;
+            sunLight.shadow.camera.far = 900;
+
             sunLight.shadow.camera.left = -600;
             sunLight.shadow.camera.right = 600;
             sunLight.shadow.camera.top = 600;
             sunLight.shadow.camera.bottom = -600;
 
             scene.add(sunLight);
+
 
             const fillLight = new THREE.HemisphereLight(0xddeeff, 0x222233, 1);
             scene.add(fillLight);
@@ -2408,7 +2609,6 @@
             // Scene assets
             createRealisticEiffelTower();
             createCity();
-            createCloudSection();
             createDataSection();
             createSkillsSection();
             createScooter();
@@ -2420,8 +2620,9 @@
             // Initial section visibility
             applySectionVisibility(0);
 
-            console.log('✨ Scene Initialized (Normalized City + LOD + Culling)');
+            console.log('✨ Scene Initialized (Fixed init order + no duplicate composer)');
         }
+
 
         // Hover effects ONLY for data spheres (not buildings)
         function applyHoverEffect(object) {
@@ -2444,7 +2645,13 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!composer) return;
+
+            const ease = State.isMobile ? 0.06 : 0.045;
+            State.progress += (State.targetProgress - State.progress) * ease;
+
+            // ✅ ADD THESE
+            updatePanels();
+            if (progressThumb) progressThumb.style.height = `${Math.round(State.progress * 100)}%`;
 
             const t = State.progress;
             const elapsed = clock.getElapsedTime();
@@ -2465,21 +2672,24 @@
 
                 // Desktop parallax only
                 if (!State.isMobile) {
-                    const parallaxX = mouse.x * 20;
-                    const parallaxY = mouse.y * 20;
-                    camera.position.x += (parallaxX - camera.position.x) * 0.05;
-                    camera.position.y += (parallaxY - camera.position.y) * 0.05;
+                    const parallaxX = mouse.x * 18;
+                    const parallaxY = mouse.y * 10;
+
+                    // Apply as SMALL OFFSET to the path position (not pulling the world position to mouse)
+                    camera.position.x = cameraPos.x + parallaxX;
+                    camera.position.y = cameraPos.y + parallaxY;
+                    camera.position.z = cameraPos.z;
+
                 }
 
                 camera.lookAt(cameraTarget);
 
-                // Force LOD updates (prevents “models not loading” / wrong LOD stuck)
+                // Force LOD updates (your existing logic)
                 if (cityGroup) {
                     cityGroup.traverse((o) => {
                         if (o && o.isLOD) o.update(camera);
                     });
                 }
-
 
                 const velocity = Math.abs(State.progress - (State.lastProgress || 0));
                 State.lastProgress = State.progress;
@@ -2497,9 +2707,11 @@
             if (State.started && !State.isMobile && groups.dataSpheres && groups.dataSpheres.visible) {
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(dataSpheres.children, true);
+
                 if (intersects.length > 0) {
                     const hit = intersects[0].object;
                     const sphereRoot = hit.userData.type === 'dataSphere' ? hit : hit.parent;
+
                     if (sphereRoot && sphereRoot.userData && sphereRoot.userData.type === 'dataSphere') {
                         if (hoveredObject !== sphereRoot) {
                             if (hoveredObject) resetHoverEffect(hoveredObject);
@@ -2555,8 +2767,11 @@
                 scooter.rotation.y = Math.PI / 4 + Math.sin(elapsed * 4) * 0.015;
             }
 
-            composer.render();
+            // ✅ Render ALWAYS (desktop composer OR mobile renderer)
+            if (composer) composer.render();
+            else renderer.render(scene, camera);
         }
+
 
         // Resize handler with debouncing
         let resizeTimeout;
@@ -2579,9 +2794,11 @@
 
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight);
+                if (composer) composer.setSize(window.innerWidth, window.innerHeight);
 
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, State.isMobile ? 1.2 : 1.35));
+                const DPR_CAP = State.isMobile ? 1.0 : 1.15; // 1.15 max on desktop, 1.0 on mobile
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+
             }, 120);
         });
 
@@ -2593,15 +2810,18 @@
         function warmUpGPU(callback) {
             let warmUpFrames = 0;
             const maxWarmUpFrames = 8;
+
             function warmUpLoop() {
                 if (warmUpFrames < maxWarmUpFrames) {
                     warmUpFrames++;
                     if (composer) composer.render();
+                    else renderer.render(scene, camera);
                     requestAnimationFrame(warmUpLoop);
                 } else callback();
             }
             warmUpLoop();
         }
+
 
         // Startup logic
         let sceneReady = false;
@@ -2628,6 +2848,8 @@
             if (!sceneReady) return;
 
             State.started = true;
+            onScroll();       // sets State.targetProgress based on current scroll position
+            updatePanels();
 
             if (startBtn) {
                 startBtn.disabled = true;
