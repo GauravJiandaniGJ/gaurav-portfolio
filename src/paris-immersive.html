@@ -38,8 +38,10 @@
         }
 
         html {
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
+            /* native smooth fights our controlled scroll */
         }
+
 
         body {
             font-family: var(--font-body);
@@ -247,11 +249,12 @@
             opacity: 1;
         }
 
-        /* SCROLL CONTAINER - ULTRA LONG for Low Sensitivity */
+        /* SCROLL CONTAINER - Reduced height for better performance */
         .scroll-container {
             position: relative;
             z-index: 10;
-            height: 2500vh;
+            height: 800vh;
+            /* Reduced from 2500vh for smoother scrolling */
             pointer-events: none;
         }
 
@@ -1249,15 +1252,112 @@
 
 
         console.log('🚀 Script starting (Module Mode)...');
+        // ✅ Prevent browser from restoring previous scroll position on reload/back/forward
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 
         // State
         const State = {
             started: false,
             progress: 0,
-            targetProgress: 0,  // ✅ add
+            targetProgress: 0,
             section: 0,
-            isMobile: window.innerWidth < 768
+            isMobile: window.innerWidth < 768,
+            lastFrameTime: 0,
+            frameInterval: 1000 / 60, // Target 60 FPS
+
+            // ✅ quality tier (can change at runtime now)
+            qualityTier: 'HIGH',
+            userForcedTier: 'HIGH',  // if you ever want to force it manually
+
+            // ✅ FPS monitoring (auto downgrade)
+            fps: 60,
+            fpsSamples: [],
+            fpsLastSampleTs: 0,
+            lowFpsStrikes: 0
         };
+
+
+        // =====================
+        // ADAPTIVE QUALITY SYSTEM
+        // =====================
+        const QUALITY_PRESETS = {
+            LOW: {
+                particleCount: 180,     // ✅ big drop
+                cloudCount: 3,          // ✅ big drop
+                shadowMapSize: 0,       // ✅ not used (we disable shadows)
+                maxLodDistance: 700,
+                cullDistance: 850,      // ✅ more aggressive
+                enableBloom: false,
+                dprCap: 0.65,           // ✅ huge GPU saver
+                buildingCount: 24       // ✅ fewer buildings
+            },
+
+            MEDIUM: {
+                particleCount: 800,
+                cloudCount: 10,
+                shadowMapSize: 512,
+                maxLodDistance: 1200,
+                cullDistance: 1400,
+                enableBloom: true,
+                dprCap: 0.85,
+                buildingCount: 54
+            },
+            HIGH: {
+                particleCount: 1200,
+                cloudCount: 14,
+                shadowMapSize: 2048,     // ✅ bump shadows
+                maxLodDistance: 1800,
+                cullDistance: 2000,      // ✅ avoid pop
+                enableBloom: true,
+                dprCap: 1.0,             // ✅ capped for MacBook Air performance
+                buildingCount: 72
+            }
+
+        };
+
+        function detectQualityTier() {
+            // Mobile always gets LOW
+            if (State.isMobile) return 'LOW';
+
+            // MacBook Air detection - force LOW for thermal management
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const isMacBookAir = isMac && navigator.hardwareConcurrency <= 8 && /MacBookAir|MacBook Air/.test(navigator.userAgent);
+
+            if (isMacBookAir) {
+                console.log('🍎 MacBook Air detected - forcing LOW quality for thermal management');
+                return 'LOW';
+            }
+
+            // Estimate GPU capability
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) return 'LOW';
+
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
+
+            // Check for known low-power GPUs
+            const lowPowerGPUs = ['Intel', 'HD Graphics', 'UHD Graphics', 'Iris', 'Mali', 'Adreno', 'PowerVR'];
+            const isLowPower = lowPowerGPUs.some(gpu => renderer.includes(gpu));
+
+            // Check device memory (if available)
+            const memory = navigator.deviceMemory || 4;
+            const cores = navigator.hardwareConcurrency || 4;
+
+            if (isLowPower || memory < 4 || cores < 4) return 'LOW';
+            if (memory >= 8 && cores >= 8 && !isLowPower) return 'HIGH';
+            return 'MEDIUM';
+        }
+
+        function getQualitySettings() {
+            return QUALITY_PRESETS[State.qualityTier] || QUALITY_PRESETS.MEDIUM;
+        }
+
+        // Auto-detect quality based on hardware (MacBook Air gets LOW)
+        State.qualityTier = detectQualityTier();
+        console.log('🎮 Quality Tier:', State.qualityTier, '(auto-detected)');
+
 
 
         // Elements
@@ -1277,7 +1377,10 @@
 
 
         // Mouse Tracking (keep only for camera parallax; raycast targets reduced)
-        const mouse = new THREE.Vector2();
+        const mouse = new THREE.Vector2(0, 0);
+        const mouseSmooth = new THREE.Vector2(0, 0);
+        const MOUSE_SMOOTHING = 0.08; // lower = smoother
+
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -1333,7 +1436,8 @@
             serverRacks: null,
             dataSpheres: null,
             codeBlocks: null,
-            clouds: null   // ✅ add this
+            clouds: null,
+            terrain: null  // NEW: terrain with grass and river
         };
 
 
@@ -1386,6 +1490,37 @@
                 thickness: 0.35,
                 ior: 1.45,
                 transparent: true
+            }),
+            // NEW: Land and Environment Materials
+            grass: new THREE.MeshStandardMaterial({
+                color: 0x4a6b3e,
+                roughness: 0.95,
+                metalness: 0.0,
+            }),
+            river: new THREE.MeshPhysicalMaterial({
+                color: 0x2a5a6a,
+                metalness: 0.1,
+                roughness: 0.1,
+                transmission: 0.6,
+                thickness: 2.0,
+                transparent: true,
+                opacity: 0.85,
+                envMapIntensity: 1.5
+            }),
+            riverBed: new THREE.MeshStandardMaterial({
+                color: 0x3d4a3a,
+                roughness: 0.9,
+                metalness: 0.0
+            }),
+            dirt: new THREE.MeshStandardMaterial({
+                color: 0x5c4a3a,
+                roughness: 1.0,
+                metalness: 0.0
+            }),
+            path: new THREE.MeshStandardMaterial({
+                color: 0x8a7a6a,
+                roughness: 0.9,
+                metalness: 0.0
             })
 
         };
@@ -1423,7 +1558,8 @@
             return Math.min(100, base + current);
         }
 
-        const ASSET_BASE_URL = '';
+        const ASSET_BASE_URL = 'https://pub-311583034e5e4275b8fb5d11ad15c564.r2.dev';
+
 
         // If you want local dev, keep it empty '' or switch by environment.
 
@@ -1476,11 +1612,11 @@
             }
 
             const [eiffelGltf, scooterGltf, building1, building2, building3] = await Promise.all([
-                loadModel('/eiffel-tower.glb', 'Eiffel Tower'),
-                loadModel('/scooter.glb', 'Scooter'),
-                loadModel('/static/building1.glb', 'Building 1'),
-                loadModel('/static/building2.glb', 'Building 2'),
-                loadModel('/static/building3.glb', 'Building 3')
+                loadModel('/3d-models/eiffel-tower.glb', 'Eiffel Tower'),
+                loadModel('/3d-models/scooter.glb', 'Scooter'),
+                loadModel('/3d-models/building1.glb', 'Building 1'),
+                loadModel('/3d-models/building2.glb', 'Building 2'),
+                loadModel('/3d-models/building3.glb', 'Building 3')
             ]);
 
             loadedModels.eiffelTower = eiffelGltf;
@@ -1595,79 +1731,172 @@
         }
 
         // -------------------------
-        // REAL GROUND (FIX: "real land")
+        // REALISTIC TERRAIN with GRASS, RIVER, and LAND
         // -------------------------
         function createGround() {
-            // Big plane, PBR asphalt. If texture load fails, fall back to your canvas texture.
-            const size = 6000;
+            console.log('🌿 Creating realistic terrain with grass and river...');
 
-            const geo = new THREE.PlaneGeometry(size, size, 1, 1);
-            geo.rotateX(-Math.PI / 2);
+            const terrainGroup = new THREE.Group();
+            terrainGroup.name = 'terrain';
 
-            // Fallback material (if texture loading fails)
-            const fallbackMat = new THREE.MeshStandardMaterial({
-                color: 0x2a2a2a,
-                roughness: 0.95,
-                metalness: 0.02
-            });
+            const worldSize = 8000;
+            const segments = 128; // Higher = more detailed terrain
 
-            const ground = new THREE.Mesh(geo, fallbackMat);
-            ground.receiveShadow = true;
+            // Create base terrain geometry with noise-like variation
+            const terrainGeo = new THREE.PlaneGeometry(worldSize, worldSize, segments, segments);
+            terrainGeo.rotateX(-Math.PI / 2);
 
-            // Try PBR textures (PolyHaven) – these URLs work client-side in browser
-            const tl = new THREE.TextureLoader();
+            // Add height variation to terrain (gentle rolling hills)
+            const positions = terrainGeo.attributes.position;
+            const vertexCount = positions.count;
 
-            // NOTE: You can change this set to any “asphalt” / “concrete” set you prefer.
-            // Keep it simple: color + normal + roughness is enough.
-            const urls = {
-                color: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_diff_2k.jpg',
-                normal: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_nor_gl_2k.jpg',
-                rough: 'https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/asphalt_02/asphalt_02_rough_2k.jpg'
-            };
+            for (let i = 0; i < vertexCount; i++) {
+                const x = positions.getX(i);
+                const z = positions.getZ(i);
 
-            let loaded = 0;
-            const onTex = () => {
-                loaded++;
-                if (loaded < 3) return;
+                // Create gentle rolling hills using sine waves
+                // Keep center area (where Eiffel is) relatively flat
+                const distFromCenter = Math.sqrt(x * x + z * z);
+                const flattenFactor = Math.max(0, 1 - distFromCenter / 1500);
 
-                // Build PBR mat
-                const mat = new THREE.MeshStandardMaterial({
-                    map: maps.color,
-                    normalMap: maps.normal,
-                    roughnessMap: maps.rough,
-                    roughness: 1.0,
-                    metalness: 0.02
-                });
+                let height = 0;
 
-                ground.material = mat;
-                ground.material.needsUpdate = true;
-            };
+                // Large rolling hills
+                height += Math.sin(x * 0.001) * Math.cos(z * 0.001) * 15;
+                height += Math.sin(x * 0.002 + 100) * Math.cos(z * 0.002) * 8;
 
-            const maps = {};
-            try {
-                maps.color = tl.load(urls.color, (t) => {
-                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-                    t.repeat.set(18, 18);
-                    t.anisotropy = Math.min(8, renderer?.capabilities?.getMaxAnisotropy?.() || 8);
-                    onTex();
-                });
+                // Smaller details
+                height += Math.sin(x * 0.005) * Math.sin(z * 0.005) * 3;
 
-                maps.normal = tl.load(urls.normal, (t) => {
-                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-                    t.repeat.set(18, 18);
-                    onTex();
-                });
+                // Flatten center area for Eiffel Tower and main scene
+                height = height * (1 - flattenFactor * 0.7);
 
-                maps.rough = tl.load(urls.rough, (t) => {
-                    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-                    t.repeat.set(18, 18);
-                    onTex();
-                });
-            } catch (e) {
-                console.warn('Ground PBR load failed, using fallback:', e);
+                // Ensure minimum height
+                height = Math.max(-5, height);
+
+                positions.setY(i, height);
             }
 
-            return ground;
+            terrainGeo.computeVertexNormals();
+
+            // Create the main grass terrain
+            const grassMaterial = MATERIALS.grass.clone();
+
+            // Try to load grass texture if available, else use color
+            const textureLoader = new THREE.TextureLoader();
+            const grassTextureUrl = assetUrl('/3d-models/grass.jpg');
+
+            textureLoader.load(
+                grassTextureUrl,
+                (texture) => {
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.RepeatWrapping;
+                    texture.repeat.set(40, 40);
+                    texture.anisotropy = 16;
+                    grassMaterial.map = texture;
+                    grassMaterial.needsUpdate = true;
+                    console.log('✅ Grass texture loaded');
+                },
+                undefined,
+                () => {
+                    console.log('ℹ️ No grass texture found, using procedural color');
+                }
+            );
+
+            const terrain = new THREE.Mesh(terrainGeo, grassMaterial);
+            terrain.receiveShadow = true;
+            terrain.name = 'grassTerrain';
+            terrainGroup.add(terrain);
+
+            // Create River
+            createRiver(terrainGroup);
+
+            // Create dirt paths/roads
+            createPaths(terrainGroup);
+
+            scene.add(terrainGroup);
+            groups.terrain = terrainGroup;
+
+            console.log('✅ Realistic terrain created with grass and river');
+            return terrainGroup;
+        }
+
+        // Create a winding river through the scene
+        function createRiver(parentGroup) {
+            console.log('🌊 Creating river...');
+
+            const riverWidth = 180;
+            const riverLength = 6000;
+            const riverCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-2500, -2, 800),
+                new THREE.Vector3(-1000, -3, 400),
+                new THREE.Vector3(0, -4, 0),
+                new THREE.Vector3(1000, -3, -400),
+                new THREE.Vector3(2500, -2, -800)
+            ]);
+
+            // Create river geometry from curve
+            const riverSegments = 100;
+            const riverGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2, 8, false);
+
+            // Flatten the tube to make it look like a river
+            const positions = riverGeo.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                const y = positions.getY(i);
+                // Flatten vertically and lower slightly
+                positions.setY(i, Math.max(-8, y * 0.1 - 4));
+            }
+            riverGeo.computeVertexNormals();
+
+            const river = new THREE.Mesh(riverGeo, MATERIALS.river);
+            river.name = 'river';
+            river.receiveShadow = true;
+            parentGroup.add(river);
+
+            // Add river banks (slightly elevated dirt)
+            const bankGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2 + 15, 8, false);
+            const bankPositions = bankGeo.attributes.position;
+            for (let i = 0; i < bankPositions.count; i++) {
+                const y = bankPositions.getY(i);
+                bankPositions.setY(i, Math.max(-3, y * 0.15 + 1));
+            }
+            bankGeo.computeVertexNormals();
+
+            const riverBank = new THREE.Mesh(bankGeo, MATERIALS.riverBed);
+            riverBank.name = 'riverBank';
+            riverBank.receiveShadow = true;
+            parentGroup.add(riverBank);
+
+            console.log('✅ River created');
+        }
+
+        // Create dirt paths/roads
+        function createPaths(parentGroup) {
+            console.log('🛤️ Creating paths...');
+
+            // Main path leading to Eiffel
+            const pathCurve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 0.5, 600),
+                new THREE.Vector3(0, 0.5, 300),
+                new THREE.Vector3(0, 0.5, 0),
+                new THREE.Vector3(0, 0.5, -200)
+            ]);
+
+            const pathGeo = new THREE.TubeGeometry(pathCurve, 50, 25, 8, false);
+
+            // Flatten path
+            const positions = pathGeo.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                positions.setY(i, 0.8);
+            }
+            pathGeo.computeVertexNormals();
+
+            const mainPath = new THREE.Mesh(pathGeo, MATERIALS.path);
+            mainPath.name = 'mainPath';
+            mainPath.receiveShadow = true;
+            parentGroup.add(mainPath);
+
+            console.log('✅ Paths created');
         }
 
 
@@ -1743,25 +1972,27 @@
             }
 
             const useFallback = templates.length === 0;
-            const instances = State.isMobile ? 46 : 72;
+            const quality = getQualitySettings();
+            const instances = quality.buildingCount;
 
             const proxyBaseMat = MATERIALS.limestone.clone();
 
             function makeLODFromTemplate(t, scalar) {
+                const quality = getQualitySettings();
+
                 const hi = t.hi.clone(true);
                 hi.scale.multiplyScalar(scalar);
                 hi.updateMatrixWorld(true);
 
-                // Ground it properly
+                // Ground it
                 const b = new THREE.Box3().setFromObject(hi);
                 hi.position.y += -b.min.y;
                 hi.updateMatrixWorld(true);
 
-                // Use FINAL size for proxy (this is the key)
                 const finalBox = new THREE.Box3().setFromObject(hi);
                 const finalSize = finalBox.getSize(new THREE.Vector3());
 
-                const proxyMat = proxyBaseMat.clone();
+                const proxyMat = MATERIALS.limestone.clone();
                 proxyMat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.10);
 
                 const proxy = makeProxyBuilding(finalSize, proxyMat);
@@ -1769,13 +2000,11 @@
                 const lod = new THREE.LOD();
                 lod.addLevel(hi, 0);
 
-                // 🔥 push proxy much farther so you don't see slabs near Eiffel
-                // Proxy only beyond culling range so it never “pops” on screen
-                lod.addLevel(proxy, CULL.maxDistance + 400);
-                // try 1400–2200 depending on your camera distances
-
+                // ✅ proxy only FAR away (never near camera)
+                lod.addLevel(proxy, quality.maxLodDistance * 1.6);
                 return lod;
             }
+
 
 
             // ---- Layout (IMPORTANT: move city away from Eiffel + away from camera corridor)
@@ -1805,8 +2034,18 @@
                         const edge = Math.floor(Math.random() * 4);
                         const scalar = 0.90 + Math.random() * 0.35;
 
-                        const baseR = State.isMobile ? 26 : 30;
-                        const r = baseR * scalar + (Math.random() * 8);
+                        // Use real footprint radius (prevents overlap properly)
+                        let r;
+                        if (!useFallback) {
+                            const t = templates[Math.floor(Math.random() * templates.length)];
+                            // footprint based on model size (x/z)
+                            const footprint = Math.max(t.size.x, t.size.z) * 0.55;
+                            r = footprint * scalar;
+                        } else {
+                            const baseR = State.isMobile ? 32 : 40;
+                            r = baseR * scalar + (Math.random() * 10);
+                        }
+
 
                         let x, z, rotY;
                         const jitter = (Math.random() - 0.5) * 22;
@@ -1856,8 +2095,10 @@
                             obj.position.y = h / 2;
                             obj.receiveShadow = true;
                         } else {
-                            const t = templates[Math.floor(Math.random() * templates.length)];
-                            obj = makeLODFromTemplate(t, scalar);
+                            // Reuse the same template that was used for radius calculation (if it exists)
+                            const t2 = (typeof t !== 'undefined' && t) ? t : templates[Math.floor(Math.random() * templates.length)];
+                            obj = makeLODFromTemplate(t2, scalar);
+
                         }
 
                         obj.position.set(x, 0, z);
@@ -1873,19 +2114,25 @@
             }
 
             // extra safety pass
-            pushApart(cityInstances, State.isMobile ? 78 : 92, 2);
+            pushApart(cityInstances, State.isMobile ? 95 : 130, 5);
+
 
             scene.add(cityGroup);
-            console.log(`✅ City built: ${placed} buildings (Eiffel-safe + spaced)`);
+            // Enable automatic frustum culling for all city objects
+            cityGroup.traverse((child) => {
+                if (child.isMesh || child.isLOD) {
+                    child.frustumCulled = true;
+                }
+            });
+
+            console.log(`✅ City built: ${placed} buildings (Eiffel-safe + spaced, frustum culling enabled)`);
         }
 
 
 
-        // Distance-based culling (vanish logic)
+        // Distance-based culling (vanish logic) - uses quality settings
         const CULL = {
-            maxDistance: 1550,
-            // beyond this: invisible (zero draw)
-            checkIntervalMs: 220
+            checkIntervalMs: 150 // Faster checks for smoother transitions
         };
         let lastCullTime = 0;
 
@@ -1911,16 +2158,13 @@
         }
 
 
+        // REMOVED: Manual culling - now using Three.js built-in frustum culling
+        // which runs automatically on the GPU
         function updateCityCulling(nowMs) {
+            // Three.js handles culling automatically via frustumCulled = true
+            // This function kept for compatibility but does minimal work
             if (!groups.city || !groups.city.visible) return;
-            if ((nowMs - lastCullTime) < CULL.checkIntervalMs) return;
-            lastCullTime = nowMs;
-
-            const camPos = camera.position;
-            for (const obj of cityInstances) {
-                const d = camPos.distanceTo(obj.position);
-                obj.visible = d < CULL.maxDistance;
-            }
+            // No manual iteration - let Three.js handle it
         }
 
 
@@ -1984,7 +2228,7 @@
             splitText();
         }
 
-        // Eiffel Tower (use loaded model, no double-load)
+        // Eiffel Tower (use loaded model ONLY - no procedural fallback)
         function createRealisticEiffelTower() {
             eiffelTower = new THREE.Group();
 
@@ -1999,46 +2243,13 @@
                     }
                 });
 
-                // ✅ normalize the actual model (not "raw")
-                const normalized = normalizeToBaseline(model, { targetHeight: 380 }); // Eiffel should be BIG
+                // ✅ normalize the actual model
+                const normalized = normalizeToBaseline(model, { targetHeight: 380 });
                 eiffelTower.add(normalized.wrapper);
-
             } else {
-                // fallback procedural
-                const mat = MATERIALS.iron;
-                const legHeight = 150;
-                for (let i = 0; i < 4; i++) {
-                    const angle = (i * Math.PI / 2) + Math.PI / 4;
-                    const legGroup = new THREE.Group();
-                    const legGeo = new THREE.CylinderGeometry(2, 6, legHeight, 4);
-                    const leg = new THREE.Mesh(legGeo, mat);
-                    leg.position.y = legHeight / 2;
-                    legGroup.add(leg);
-                    legGroup.position.set(Math.cos(angle) * 55, 0, Math.sin(angle) * 55);
-                    legGroup.lookAt(0, 300, 0);
-                    legGroup.rotateX(Math.PI / 8);
-                    eiffelTower.add(legGroup);
-                }
-                const p1 = new THREE.Mesh(new THREE.BoxGeometry(70, 4, 70), mat);
-                p1.position.y = 55;
-                eiffelTower.add(p1);
-                const midGeo = new THREE.CylinderGeometry(15, 35, 90, 4);
-                const mid = new THREE.Mesh(midGeo, mat);
-                mid.position.y = 105;
-                eiffelTower.add(mid);
-                const p2 = new THREE.Mesh(new THREE.BoxGeometry(45, 4, 45), mat);
-                p2.position.y = 150;
-                eiffelTower.add(p2);
-                const topGeo = new THREE.CylinderGeometry(4, 15, 120, 4);
-                const top = new THREE.Mesh(topGeo, mat);
-                top.position.y = 210;
-                eiffelTower.add(top);
-                const p3 = new THREE.Mesh(new THREE.BoxGeometry(20, 3, 20), mat);
-                p3.position.y = 270;
-                eiffelTower.add(p3);
-                const spire = new THREE.Mesh(new THREE.ConeGeometry(2, 40, 8), mat);
-                spire.position.y = 290;
-                eiffelTower.add(spire);
+                // No model loaded - skip Eiffel entirely
+                console.warn('⚠️ Eiffel Tower model not loaded, skipping');
+                return;
             }
 
             // Beacon
@@ -2061,113 +2272,79 @@
         }
 
         function createCloudLayers() {
+            const quality = getQualitySettings();
             const group = new THREE.Group();
             group.name = "clouds";
 
             const tl = new THREE.TextureLoader();
-            const tex = tl.load("https://threejs.org/examples/textures/sprites/cloud.png");
-            tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+            const tex = tl.load(
+                assetUrl('/3d-models/cloud.png'),
+                (t) => {
+                    t.colorSpace = THREE.SRGBColorSpace;
+                    t.minFilter = THREE.LinearMipmapLinearFilter;
+                    t.magFilter = THREE.LinearFilter;
+                    t.generateMipmaps = true;
+                    t.needsUpdate = true;
+                }
+            );
+
 
             const mat = new THREE.MeshBasicMaterial({
                 map: tex,
                 transparent: true,
-                opacity: 0.18,
-                depthWrite: false
+                opacity: 0.32,
+                depthWrite: false,
+                depthTest: false,        // ✅ prevents ugly clipping
+                premultipliedAlpha: true,
+                alphaTest: 0.01          // ✅ removes dirty edges
             });
 
-            const planeGeo = new THREE.PlaneGeometry(600, 350);
+            const planeGeo = new THREE.PlaneGeometry(700, 420);
 
-            const count = State.isMobile ? 10 : 18;
-            for (let i = 0; i < count; i++) {
-                const p = new THREE.Mesh(planeGeo, mat.clone());
+            for (let i = 0; i < quality.cloudCount; i++) {
+                const p = new THREE.Mesh(planeGeo, mat);
+                // 🌥️ 360° CLOUD RING (like before)
+                const radius = 1400 + Math.random() * 1200;
+                const angle = Math.random() * Math.PI * 2;
+
                 p.position.set(
-                    (Math.random() - 0.5) * 1800,
-                    220 + Math.random() * 220,
-                    -200 - Math.random() * 2200
+                    Math.cos(angle) * radius,
+                    220 + Math.random() * 320,
+                    Math.sin(angle) * radius
                 );
+
                 p.rotation.y = Math.random() * Math.PI * 2;
-                p.scale.setScalar(0.8 + Math.random() * 1.6);
-                p.material.opacity = 0.10 + Math.random() * 0.18;
+                p.renderOrder = -10; // behind most things
+                p.scale.setScalar(0.8 + Math.random() * 1.8);
                 group.add(p);
             }
 
             scene.add(group);
             groups.clouds = group;
-            return group;
         }
+
 
 
         // Data spheres (keep interactive; small count)
         const raycaster = new THREE.Raycaster();
         let hoveredObject = null;
 
+        // REMOVED: Data spheres section - not using loaded models
         function createDataSection() {
+            // Data spheres removed - only using loaded GLB models
             dataSpheres = new THREE.Group();
             dataSpheres.visible = false;
             groups.dataSpheres = dataSpheres;
-
-            const sphereCount = State.isMobile ? 12 : 24;
-
-            for (let i = 0; i < sphereCount; i++) {
-                const glassMat = new THREE.MeshPhysicalMaterial({
-                    color: 0xffffff,
-                    metalness: 0.1,
-                    roughness: 0.05,
-                    transmission: 0.9,
-                    thickness: 0.5,
-                    emissive: 0x000000,
-                    emissiveIntensity: 0
-                });
-
-                const sphere = new THREE.Mesh(new THREE.SphereGeometry(2 + Math.random() * 4, 28, 28), glassMat);
-
-                const coreMat = MATERIALS.emissivePurple.clone();
-                const core = new THREE.Mesh(new THREE.SphereGeometry(1 + Math.random(), 16, 16), coreMat);
-                sphere.add(core);
-
-                const angle = (i / sphereCount) * Math.PI * 2;
-                const radius = 60 + Math.random() * 40;
-                sphere.position.set(Math.cos(angle) * radius, 50 + Math.random() * 60, -900 + Math.sin(angle) * radius);
-
-                sphere.userData = {
-                    type: 'dataSphere',
-                    angle,
-                    radius,
-                    speed: 0.1 + Math.random() * 0.2,
-                    yOffset: sphere.position.y,
-                    originalScale: sphere.scale.clone(),
-                    originalEmissive: 0x000000,
-                    index: i
-                };
-
-                dataSpheres.add(sphere);
-            }
-            scene.add(dataSpheres);
+            // No procedural generation - skip entirely
         }
 
+        // REMOVED: Skills code blocks section - not using loaded models
         function createSkillsSection() {
+            // Code blocks removed - only using loaded GLB models
             codeBlocks = new THREE.Group();
             codeBlocks.visible = false;
             groups.codeBlocks = codeBlocks;
-
-            const blockMat = new THREE.MeshPhysicalMaterial({
-                color: 0x00ff88,
-                transparent: true,
-                opacity: 0.6,
-                transmission: 0.5,
-                thickness: 1,
-                roughness: 0.25
-            });
-
-            const count = State.isMobile ? 12 : 18;
-            for (let i = 0; i < count; i++) {
-                const w = 5 + Math.random() * 10;
-                const block = new THREE.Mesh(new THREE.BoxGeometry(w, 2, 0.5), blockMat);
-                block.position.set(-200 + Math.random() * 100, 30 + i * 15, -500 - Math.random() * 200);
-                block.rotation.y = -0.3 + Math.random() * 0.1;
-                codeBlocks.add(block);
-            }
-            scene.add(codeBlocks);
+            // No procedural generation - skip entirely
         }
 
         function createScooter() {
@@ -2195,74 +2372,9 @@
                 scooter.add(beam);
                 scooter.add(beam.target);
             } else {
-                const paintMat = new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.3, metalness: 0.7 });
-                const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
-                const chromeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.9 });
-
-                const deck = new THREE.Mesh(new THREE.BoxGeometry(8, 0.8, 2.5), paintMat);
-                deck.position.y = 1.2;
-                scooter.add(deck);
-
-                const grip = new THREE.Mesh(new THREE.PlaneGeometry(6, 2), darkMat);
-                grip.rotation.x = -Math.PI / 2;
-                grip.position.y = 1.61;
-                scooter.add(grip);
-
-                const stemGroup = new THREE.Group();
-                stemGroup.position.set(3.5, 1.5, 0);
-                const joint = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 2, 16), darkMat);
-                joint.rotation.z = Math.PI / 4;
-                joint.position.set(-0.5, 1, 0);
-                stemGroup.add(joint);
-                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 11, 16), paintMat);
-                pole.position.set(-1, 6, 0);
-                pole.rotation.z = -0.15;
-                stemGroup.add(pole);
-                scooter.add(stemGroup);
-
-                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 5.5, 16), darkMat);
-                bar.rotation.x = Math.PI / 2;
-                bar.position.set(1.5, 10.5, 0);
-                const handleNode = new THREE.Group();
-                handleNode.position.set(1.6, 11.2, 0);
-                handleNode.add(bar);
-
-                const leverGeo = new THREE.BoxGeometry(0.2, 1.5, 0.1);
-                const l1 = new THREE.Mesh(leverGeo, chromeMat);
-                l1.position.set(0, -0.5, 1.5);
-                l1.rotation.x = -0.5;
-                handleNode.add(l1);
-                const l2 = new THREE.Mesh(leverGeo, chromeMat);
-                l2.position.set(0, -0.5, -1.5);
-                l2.rotation.x = 0.5;
-                handleNode.add(l2);
-
-                const display = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 1.5), new THREE.MeshBasicMaterial({ color: 0x000000 }));
-                display.position.y = 0.2;
-                handleNode.add(display);
-                scooter.add(handleNode);
-
-                const tireGeo = new THREE.TorusGeometry(1.2, 0.3, 8, 24);
-                const hubGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.4, 16);
-                hubGeo.rotateX(Math.PI / 2);
-
-                const fw = new THREE.Group();
-                fw.add(new THREE.Mesh(tireGeo, darkMat));
-                fw.add(new THREE.Mesh(hubGeo, chromeMat));
-                fw.position.set(3.5, 1.5, 0);
-                scooter.add(fw);
-
-                const bw = new THREE.Group();
-                bw.add(new THREE.Mesh(tireGeo, darkMat));
-                bw.add(new THREE.Mesh(hubGeo, chromeMat));
-                bw.position.set(-3, 1.5, 0);
-                scooter.add(bw);
-
-                const beam = new THREE.SpotLight(0xffffff, 2, 30, 0.5, 0.5);
-                beam.position.set(1.9, 8, 0);
-                beam.target.position.set(10, 0, 0);
-                scooter.add(beam);
-                scooter.add(beam.target);
+                // No model loaded - skip scooter entirely
+                console.warn('⚠️ Scooter model not loaded, skipping');
+                return;
             }
 
             scooter.position.set(-150, 0, 100);
@@ -2271,28 +2383,13 @@
             scene.add(scooter);
         }
 
-        // Particles (performance-safe: rotate only; no per-vertex updates)
+        // REMOVED: Particles - not using loaded models
         function createParticles() {
-            const count = State.isMobile ? 900 : 1600;
-            const pos = new Float32Array(count * 3);
-            for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 2000;
-
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-
-            const mat = new THREE.PointsMaterial({
-                color: 0xffaa44,
-                size: 1.25,
-                transparent: true,
-                opacity: 0.55,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-            });
-
-            particles = new THREE.Points(geo, mat);
-            particles.visible = true;
+            // Particles removed - only using loaded GLB models
+            particles = new THREE.Group();
+            particles.visible = false;
             groups.particles = particles;
-            scene.add(particles);
+            // No procedural generation - skip entirely
         }
 
         // Camera paths (unchanged)
@@ -2405,30 +2502,23 @@
         const getCameraPath = () => State.isMobile ? mobileCameraPath : desktopCameraPath;
         const getLookAtPath = () => State.isMobile ? mobileLookAtPath : desktopLookAtPath;
 
-        // Visibility by section (FIX #2: show only what matters)
+        // Visibility by section - ONLY loaded models + terrain
         function applySectionVisibility(section) {
-            // default all off then enable relevant
             const setV = (key, v) => { if (groups[key]) groups[key].visible = v; };
 
-            setV('city', true);
-            setV('eiffel', true);
-            setV('particles', true);
+            // Only show loaded GLB models
+            setV('city', true);      // Buildings from loaded models
+            setV('eiffel', true);    // Eiffel from loaded model
+            setV('scooter', section >= 1 && section <= 2); // Scooter from loaded model
 
-            setV('serverRacks', false);
+            // NEW: Terrain always visible
+            setV('terrain', true);   // Grass, river, land
+
+            // Disabled: procedural elements (particles, dataSpheres, codeBlocks, serverRacks)
+            setV('particles', false);
             setV('dataSpheres', false);
             setV('codeBlocks', false);
-
-            // Scooter only in journey-ish
-            setV('scooter', section >= 1 && section <= 2);
-
-            if (section === 4) setV('serverRacks', true);       // cloud
-            if (section === 5) setV('dataSpheres', true);       // data
-            if (section === 6) setV('codeBlocks', true);        // skills
-
-            // If deep into later sections, reduce visual clutter
-            if (section >= 7) {
-                setV('serverRacks', false);
-            }
+            setV('serverRacks', false);
         }
 
         function updatePanels() {
@@ -2457,23 +2547,128 @@
             markers.forEach((m, i) => m.classList.toggle('active', i === State.section));
         }
 
+        // =====================
+        // CONTROLLED SMOOTH SCROLL (ULTRA SMOOTH - SLOW SCROLL)
+        // =====================
+        const SCROLL_CTRL = {
+            targetY: 0,
+            currentY: 0,
+            rafId: null,
+
+            // 🔥 ULTRA SLOW settings for cinematic scroll
+            wheelSpeed: 0.08,   // MUCH LOWER = much slower (was 0.45)
+            touchSpeed: 0.12,   // MUCH LOWER = much slower (was 0.55)
+            ease: 0.04,         // MUCH LOWER = much smoother/floaty (was 0.1)
+
+            // safety
+            epsilon: 0.2
+        };
+
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function maxScrollY() {
+            return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        }
+
+        // Normalize wheel across devices (trackpad vs mouse)
+        function normalizeWheelDelta(e) {
+            let d = e.deltaY;
+
+            // deltaMode: 0=pixel, 1=line, 2=page
+            if (e.deltaMode === 1) d *= 16;                 // lines -> px
+            if (e.deltaMode === 2) d *= window.innerHeight; // pages -> px
+
+            // Clamp crazy spikes (mac trackpad inertia can be huge)
+            d = clamp(d, -220, 220);
+            return d;
+        }
+
+        function startScrollRaf() {
+            if (SCROLL_CTRL.rafId) return;
+
+            const step = () => {
+                const maxY = maxScrollY();
+
+                // Keep targets in bounds
+                SCROLL_CTRL.targetY = clamp(SCROLL_CTRL.targetY, 0, maxY);
+
+                // Ease toward target
+                const diff = SCROLL_CTRL.targetY - SCROLL_CTRL.currentY;
+                SCROLL_CTRL.currentY += diff * SCROLL_CTRL.ease;
+
+                // Apply scroll
+                window.scrollTo(0, SCROLL_CTRL.currentY);
+
+                // Update progress mapping (your existing logic)
+                onScroll();
+
+                if (Math.abs(diff) > SCROLL_CTRL.epsilon) {
+                    SCROLL_CTRL.rafId = requestAnimationFrame(step);
+                } else {
+                    // Snap final
+                    SCROLL_CTRL.currentY = SCROLL_CTRL.targetY;
+                    window.scrollTo(0, SCROLL_CTRL.currentY);
+                    onScroll();
+
+                    cancelAnimationFrame(SCROLL_CTRL.rafId);
+                    SCROLL_CTRL.rafId = null;
+                }
+            };
+
+            SCROLL_CTRL.rafId = requestAnimationFrame(step);
+        }
+
+
+        // Throttled scroll using requestAnimationFrame for smooth performance
+        let scrollTicking = false;
         function onScroll() {
             if (!State.started) return;
 
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const scrollY = window.scrollY;
 
-            if (scrollY >= scrollHeight - 10) {
-                window.scrollTo(0, 10);
-                State.targetProgress = 0;
-            } else {
-                State.targetProgress = Math.min(scrollY / scrollHeight, 1);
-            }
+            // ✅ no forced jump, just clamp progress
+            State.targetProgress = (scrollHeight > 0)
+                ? Math.max(0, Math.min(scrollY / scrollHeight, 1))
+                : 0;
 
             if (scrollHint && State.targetProgress > 0.02) scrollHint.classList.add('hidden');
         }
 
-        window.addEventListener('scroll', onScroll);
+
+        function throttledScroll() {
+            if (!scrollTicking) {
+                requestAnimationFrame(() => {
+                    onScroll();
+                    scrollTicking = false;
+                });
+                scrollTicking = true;
+            }
+        }
+
+        // Keep scroll listener only for manual scrollbar dragging (mouse grabbing the bar, etc.)
+        window.addEventListener('scroll', throttledScroll, { passive: true });
+
+        // CONTROLLED WHEEL: Intercept and smooth out scroll for cinematic feel
+        window.addEventListener('wheel', (e) => {
+            if (!State.started) return;
+
+            // Prevent default jumpy scrolling
+            e.preventDefault();
+
+            const delta = normalizeWheelDelta(e);
+            const maxY = maxScrollY();
+
+            // Apply ultra-slow multiplier for smooth cinematic scroll
+            SCROLL_CTRL.targetY = clamp(
+                SCROLL_CTRL.targetY + (delta * SCROLL_CTRL.wheelSpeed),
+                0,
+                maxY
+            );
+
+            startScrollRaf();
+        }, { passive: false });
+
 
         markers.forEach(m => {
             m.addEventListener('click', () => {
@@ -2493,16 +2688,100 @@
             return createCloudLayers();
         }
 
+        let touchLastY = null;
+
+        window.addEventListener('touchstart', (e) => {
+            if (!State.started) return;
+            touchLastY = e.touches?.[0]?.clientY ?? null;
+            SCROLL_CTRL.currentY = window.scrollY;
+            SCROLL_CTRL.targetY = window.scrollY;
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!State.started) return;
+            if (touchLastY == null) return;
+
+            // prevent fast native fling
+            e.preventDefault();
+
+            const y = e.touches?.[0]?.clientY ?? touchLastY;
+            const delta = (touchLastY - y); // swipe up -> positive scroll
+            touchLastY = y;
+
+            const maxY = maxScrollY();
+            SCROLL_CTRL.targetY = clamp(
+                SCROLL_CTRL.targetY + (delta * SCROLL_CTRL.touchSpeed),
+                0,
+                maxY
+            );
+
+            startScrollRaf();
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            touchLastY = null;
+        }, { passive: true });
+
+
+        let sunSprite = null;
+
+        function makeSunTexture() {
+            const c = document.createElement('canvas');
+            c.width = 256; c.height = 256;
+            const ctx = c.getContext('2d');
+
+            const g = ctx.createRadialGradient(128, 128, 2, 128, 128, 120);
+            g.addColorStop(0.00, 'rgba(255, 214, 140, 1.0)');  // warm core
+            g.addColorStop(0.18, 'rgba(255, 170, 60, 0.95)');  // orange
+            g.addColorStop(0.38, 'rgba(255, 120, 30, 0.35)');  // glow falloff
+            g.addColorStop(1.00, 'rgba(255, 120, 30, 0.0)');   // transparent edge
+
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, 256, 256);
+
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.needsUpdate = true;
+            return tex;
+        }
+
+        function createSunSprite(sunDirVec3) {
+            const tex = makeSunTexture();
+            const mat = new THREE.SpriteMaterial({
+                map: tex,
+                transparent: true,
+                depthWrite: false,
+                depthTest: false,
+                blending: THREE.AdditiveBlending,
+                opacity: 0.95
+            });
+
+            const sprite = new THREE.Sprite(mat);
+            // Position the sun sprite far away in the sun direction
+            sprite.position.copy(sunDirVec3).multiplyScalar(2500);
+            sprite.scale.setScalar(400);
+            return sprite;
+        }
+
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0xbfd6e6, 0.00022);
+            // 🌫️ Warm atmospheric haze
+            scene.fog = new THREE.FogExp2(0xd96a1a, 0.00022);
+
+
             createCloudLayers();
 
 
             // 1) Camera FIRST
             const baseFov = State.isMobile ? 65 : 55;
-            camera = new THREE.PerspectiveCamera(baseFov, window.innerWidth / window.innerHeight, 0.1, 5000);
+            camera = new THREE.PerspectiveCamera(
+                baseFov,
+                window.innerWidth / window.innerHeight,
+                1,        // ✅ raise near plane
+                3500      // ✅ reduce far plane
+            );
+
 
             const startPos = State.isMobile ? new THREE.Vector3(0, 200, 500) : new THREE.Vector3(0, 150, 400);
             camera.position.copy(startPos);
@@ -2511,100 +2790,137 @@
             camera.userData.baseFov = baseFov;
 
             // 2) Renderer SECOND
+            const quality = getQualitySettings();
             renderer = new THREE.WebGLRenderer({
-                antialias: !State.isMobile,
+                antialias: State.qualityTier === 'HIGH', // Only antialias on HIGH
                 alpha: true,
                 powerPreference: 'high-performance'
             });
 
             renderer.setSize(window.innerWidth, window.innerHeight);
-            const DPR_CAP = State.isMobile ? 1.0 : 1.15;
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.dprCap));
 
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.05;
+            // 🎥 Cinematic golden-hour exposure
+            renderer.toneMappingExposure = 0.95; // brighter golden hour
+
+
+
             renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.physicallyCorrectLights = true; // still ok in many versions, later became default-ish
+            renderer.physicallyCorrectLights = true;
 
-
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.enabled = false; // DISABLED: Shadows too expensive for MacBook Air
+            // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
             canvasContainer.appendChild(renderer.domElement);
 
-            // 3) Composer LAST (desktop only)
-            const usePost = !State.isMobile;
-            if (usePost) {
+            // 3) Composer (post-processing) - DISABLED for MacBook Air performance
+            const usePost = false; // Force disable bloom for all devices to prevent thermal throttling
+
+            // Only enable bloom on desktop HIGH tier with dedicated GPU
+            const hasDedicatedGPU = (() => {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl');
+                if (!gl) return false;
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (!debugInfo) return false;
+                const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                return /NVIDIA|AMD|RTX|GTX|Radeon/.test(renderer);
+            })();
+
+            const shouldUseBloom = (State.qualityTier === 'HIGH') && quality.enableBloom && !State.isMobile && hasDedicatedGPU;
+
+            if (shouldUseBloom) {
+                const bloomWidth = Math.floor(window.innerWidth * 0.5); // Reduced from 0.75
+                const bloomHeight = Math.floor(window.innerHeight * 0.5);
+
                 composer = new EffectComposer(renderer);
                 composer.addPass(new RenderPass(scene, camera));
 
                 bloomPass = new UnrealBloomPass(
-                    new THREE.Vector2(window.innerWidth, window.innerHeight),
-                    0.35,
-                    0.45,
-                    0.85
+                    new THREE.Vector2(bloomWidth, bloomHeight),
+                    0.12,  // reduced strength
+                    0.4,   // tighter radius
+                    0.94   // higher threshold
                 );
+
                 composer.addPass(bloomPass);
+                console.log(`🌟 Bloom enabled at ${bloomWidth}x${bloomHeight} (dedicated GPU detected)`);
             } else {
                 composer = null;
                 bloomPass = null;
+                console.log(`🌟 Bloom disabled (${State.qualityTier} tier, dedicated GPU: ${hasDedicatedGPU})`);
             }
 
-            // HDRI Environment
-            new RGBELoader()
-                .setPath('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/')
-                .load('hamburg_hbf_1k.hdr', function (texture) {
-                    texture.mapping = THREE.EquirectangularReflectionMapping;
-                    scene.environment = texture;
-                    scene.background = null;
-                });
+            // HDRI Environment (only on HIGH to save GPU/RAM)
+            if (State.qualityTier !== 'LOW') {
+                const hdriRes = (State.qualityTier === 'HIGH') ? '1k' : '512'; // ✅ lighter on MEDIUM
+
+                new RGBELoader()
+                    .setPath(`https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/${hdriRes}/`)
+                    .load('hamburg_hbf_1k.hdr', (texture) => {
+                        texture.mapping = THREE.EquirectangularReflectionMapping;
+                        scene.environment = texture;
+                        scene.background = null;
+                    });
+            }
+
+
 
             const sky = new Sky();
             sky.scale.setScalar(450000);
             scene.add(sky);
 
-            // Sky uniforms
+            // 🌇 Sunset sky setup
             const sun = new THREE.Vector3();
             const uniforms = sky.material.uniforms;
-            uniforms['turbidity'].value = 6.5;
-            uniforms['rayleigh'].value = 2.2;
-            uniforms['mieCoefficient'].value = 0.006;
-            uniforms['mieDirectionalG'].value = 0.85;
 
-            // Sun position (elevation/azimuth)
-            const elevation = 38; // higher = more midday
-            const azimuth = 180;  // direction
+            // More “evening” look (warm, bright horizon)
+            uniforms['turbidity'].value = 10.0;
+            uniforms['rayleigh'].value = 1.2;
+            uniforms['mieCoefficient'].value = 0.006;
+            uniforms['mieDirectionalG'].value = 0.88;
+
+            // TRUE GOLDEN HOUR
+            const elevation = 6.0;   // a bit higher so sun is visible
+            const azimuth = 245;
+
             const phi = THREE.MathUtils.degToRad(90 - elevation);
             const theta = THREE.MathUtils.degToRad(azimuth);
             sun.setFromSphericalCoords(1, phi, theta);
+
+            // ✅ IMPORTANT: Use the REAL sun position so Sky shows the sun highlight
             uniforms['sunPosition'].value.copy(sun);
 
-
-            const sunLight = new THREE.DirectionalLight(0xffffff, 2.2);
-            sunLight.position.set(200, 650, 350);
-            sunLight.castShadow = true;
-
-            const shadowSize = State.isMobile ? 512 : 1024;
-            sunLight.shadow.mapSize.width = shadowSize;
-            sunLight.shadow.mapSize.height = shadowSize;
-
-            sunLight.shadow.camera.near = 10;
-            sunLight.shadow.camera.far = 900;
-
-            sunLight.shadow.camera.left = -600;
-            sunLight.shadow.camera.right = 600;
-            sunLight.shadow.camera.top = 600;
-            sunLight.shadow.camera.bottom = -600;
-
+            // Sun directional light
+            const sunLight = new THREE.DirectionalLight(0xffb15a, 2.2);
+            sunLight.color.convertSRGBToLinear();
+            sunLight.castShadow = (State.qualityTier !== 'LOW');
+            sunLight.position.copy(sun).multiplyScalar(800);
             scene.add(sunLight);
 
+            // ✅ Add a visible sun disc (your sprite helper) so users SEE the sun
+            if (sunSprite) scene.remove(sunSprite);
+            sunSprite = createSunSprite(sun);
+            sunSprite.material.opacity = 0.95;
+            scene.add(sunSprite);
 
-            const fillLight = new THREE.HemisphereLight(0xddeeff, 0x222233, 1);
+
+
+
+            // 🌤️ Evening ambient bounce
+            const fillLight = new THREE.HemisphereLight(
+                0xff9b42,   // orange sky bounce
+                0x1a0c05,   // dark brown ground
+                0.75
+            );
+
+
+
             scene.add(fillLight);
-
-            // Ground (real land)
+            // Ground (realistic terrain with grass and river)
             groundMesh = createGround();
-            scene.add(groundMesh);
+            // Note: createGround() now adds to scene internally, no need to add again
 
             // Scene assets
             createRealisticEiffelTower();
@@ -2622,6 +2938,22 @@
 
             console.log('✨ Scene Initialized (Fixed init order + no duplicate composer)');
         }
+
+        let isPaused = false;
+
+        document.addEventListener('visibilitychange', () => {
+            const hidden = document.visibilityState !== 'visible';
+            isPaused = hidden;
+
+            if (hidden) {
+                // stop motion + reduce work
+                State.frameInterval = 1000 / 20; // ~20fps
+            } else {
+                State.frameInterval = 1000 / 60;
+                State.lastFrameTime = performance.now();
+            }
+        });
+
 
 
         // Hover effects ONLY for data spheres (not buildings)
@@ -2643,13 +2975,82 @@
             if (object.userData.originalScale) object.scale.copy(object.userData.originalScale);
         }
 
-        function animate() {
+
+        function applyQualityTier(newTier) {
+            // ✅ don't allow auto changes if forced
+            if (State.userForcedTier) return;
+
+            if (!newTier || newTier === State.qualityTier) return;
+
+            State.qualityTier = newTier;
+            const q = getQualitySettings();
+
+            console.log(`⚙️ Switching quality tier → ${newTier}`);
+
+            if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dprCap));
+            if (renderer) renderer.shadowMap.enabled = newTier !== 'LOW';
+            if (bloomPass) bloomPass.enabled = (q.enableBloom && !State.isMobile && newTier !== 'LOW');
+        }
+
+
+        function monitorFpsAndAutoDowngrade() {
+            // 🔒 Disabled — HIGH quality locked intentionally
+            return;
+        }
+
+
+
+        function animate(currentTime) {
             requestAnimationFrame(animate);
 
-            const ease = State.isMobile ? 0.06 : 0.045;
+            // ✅ pause heavy updates when tab is hidden
+            if (isPaused) {
+                if (composer) composer.render();
+                else renderer.render(scene, camera);
+                return;
+            }
+
+            // DEBUG: Log performance every 60 frames (remove in production)
+            if (Math.floor(currentTime / 1000) % 5 === 0 && Math.random() < 0.01) {
+                console.log('📊 Performance:', {
+                    tier: State.qualityTier,
+                    dpr: renderer.getPixelRatio(),
+                    drawCalls: renderer.info.render.calls,
+                    triangles: renderer.info.render.triangles,
+                    textures: renderer.info.memory.textures,
+                    geometries: renderer.info.memory.geometries
+                });
+            }
+
+            // =====================
+            // FRAME RATE LIMITING (60 FPS target)
+            // =====================
+            // Handle first frame where currentTime may be undefined
+            if (!currentTime) {
+                State.lastFrameTime = performance.now();
+                return;
+            }
+
+            const deltaTime = currentTime - State.lastFrameTime;
+
+
+
+            // Skip if running too fast (but always allow first valid frame)
+            if (deltaTime < State.frameInterval && State.lastFrameTime > 0) {
+                return;
+            }
+            State.lastFrameTime = currentTime - (deltaTime % State.frameInterval);
+
+            // Frame-rate independent easing (guard against NaN)
+            const safeDelta = isNaN(deltaTime) || deltaTime <= 0 ? 16.67 : deltaTime;
+            const frameFactor = Math.min(safeDelta / 16.67, 2); // Normalize to ~60fps, cap at 2x
+            const baseEase = State.isMobile ? 0.06 : 0.045;
+            const ease = baseEase * frameFactor;
             State.progress += (State.targetProgress - State.progress) * ease;
 
-            // ✅ ADD THESE
+            // Clamp progress to valid range
+            State.progress = Math.max(0, Math.min(State.progress, 0.9999));
+
             updatePanels();
             if (progressThumb) progressThumb.style.height = `${Math.round(State.progress * 100)}%`;
 
@@ -2665,77 +3066,59 @@
                 const targetPos = cameraPath.getPoint(t);
                 const targetLookAt = lookAtPath.getPoint(t);
 
-                cameraPos.lerp(targetPos, 0.025);
-                cameraTarget.lerp(targetLookAt, 0.025);
+                // Frame-rate independent lerping
+                const lerpFactor = 0.025 * frameFactor;
+                cameraPos.lerp(targetPos, Math.min(lerpFactor, 0.15));
+                // Prevent harsh pitch flips (clamp lookAt height)
+                cameraTarget.y = THREE.MathUtils.clamp(cameraTarget.y, 80, 130);
+
 
                 camera.position.copy(cameraPos);
+                // Smooth mouse to avoid twitchy camera
+                mouseSmooth.lerp(mouse, MOUSE_SMOOTHING * frameFactor);
 
-                // Desktop parallax only
+
+                // Desktop parallax only (reduced sensitivity for smoother feel)
                 if (!State.isMobile) {
-                    const parallaxX = mouse.x * 18;
-                    const parallaxY = mouse.y * 10;
+                    const parallaxX = mouseSmooth.x * 3.0;
+                    const parallaxY = mouseSmooth.y * 2.0;
 
-                    // Apply as SMALL OFFSET to the path position (not pulling the world position to mouse)
+
                     camera.position.x = cameraPos.x + parallaxX;
                     camera.position.y = cameraPos.y + parallaxY;
                     camera.position.z = cameraPos.z;
-
                 }
 
                 camera.lookAt(cameraTarget);
 
-                // Force LOD updates (your existing logic)
+                // Force LOD updates - throttled to every other frame on LOW quality
                 if (cityGroup) {
-                    cityGroup.traverse((o) => {
-                        if (o && o.isLOD) o.update(camera);
-                    });
+                    const low = State.qualityTier === 'LOW';
+                    const shouldUpdate = !low || (Math.floor(currentTime / 80) % 2 === 0); // ✅ slower on LOW
+                    if (shouldUpdate) {
+                        cityGroup.traverse((o) => {
+                            if (o && o.isLOD) o.update(camera);
+                        });
+                    }
                 }
+
 
                 const velocity = Math.abs(State.progress - (State.lastProgress || 0));
                 State.lastProgress = State.progress;
 
                 const baseFov = camera.userData.baseFov || 55;
                 const targetFov = baseFov + Math.min(velocity * 450, State.isMobile ? 6 : 12);
-                camera.fov += (targetFov - camera.fov) * 0.05;
+                camera.fov += (targetFov - camera.fov) * 0.05 * frameFactor;
                 camera.updateProjectionMatrix();
             }
 
             // Culling update (vanish logic)
             updateCityCulling(nowMs);
 
-            // Raycast only when data spheres visible + desktop
-            if (State.started && !State.isMobile && groups.dataSpheres && groups.dataSpheres.visible) {
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(dataSpheres.children, true);
+            // REMOVED: Raycaster hover effects - data spheres removed
+            // Only using loaded GLB models, no interactive hover elements
 
-                if (intersects.length > 0) {
-                    const hit = intersects[0].object;
-                    const sphereRoot = hit.userData.type === 'dataSphere' ? hit : hit.parent;
-
-                    if (sphereRoot && sphereRoot.userData && sphereRoot.userData.type === 'dataSphere') {
-                        if (hoveredObject !== sphereRoot) {
-                            if (hoveredObject) resetHoverEffect(hoveredObject);
-                            hoveredObject = sphereRoot;
-                            applyHoverEffect(hoveredObject);
-                            document.body.style.cursor = 'pointer';
-                        }
-                    }
-                } else {
-                    if (hoveredObject) {
-                        resetHoverEffect(hoveredObject);
-                        hoveredObject = null;
-                        document.body.style.cursor = 'default';
-                    }
-                }
-            } else {
-                if (hoveredObject) {
-                    resetHoverEffect(hoveredObject);
-                    hoveredObject = null;
-                    document.body.style.cursor = 'default';
-                }
-            }
-
-            // Eiffel beacon
+            // Eiffel beacon - only when visible
             if (eiffelTower && eiffelTower.userData.spot && groups.eiffel && groups.eiffel.visible) {
                 const time = Date.now() * 0.001;
                 const spot = eiffelTower.userData.spot;
@@ -2744,22 +3127,9 @@
                 spot.target.updateMatrixWorld();
             }
 
-            // Particles (rotate only)
-            if (particles && particles.visible) {
-                particles.rotation.y = elapsed * 0.003;
-            }
+            // REMOVED: Particle and data sphere animation - only loaded models used
 
-            // Data spheres orbit
-            if (dataSpheres && dataSpheres.visible) {
-                dataSpheres.children.forEach((sphere, i) => {
-                    const a = sphere.userData.angle + elapsed * sphere.userData.speed * 0.3;
-                    sphere.position.x = Math.cos(a) * sphere.userData.radius;
-                    sphere.position.z = -900 + Math.sin(a) * sphere.userData.radius;
-                    sphere.position.y = sphere.userData.yOffset + Math.sin(elapsed * 2 + i) * 5;
-                });
-            }
-
-            // Scooter
+            // Scooter - only when visible
             if (scooter && scooter.visible) {
                 const st = (t - 0.15) / 0.17;
                 scooter.position.x = -150 + st * 200;
@@ -2767,39 +3137,41 @@
                 scooter.rotation.y = Math.PI / 4 + Math.sin(elapsed * 4) * 0.015;
             }
 
-            // ✅ Render ALWAYS (desktop composer OR mobile renderer)
+            // Render (desktop composer OR mobile renderer)
             if (composer) composer.render();
             else renderer.render(scene, camera);
         }
 
 
-        // Resize handler with debouncing
+        // Resize handler with debouncing - OPTIMIZED
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 const wasMobile = State.isMobile;
                 State.isMobile = window.innerWidth < 768;
+                if (!camera || !renderer) return;
 
+                // Update camera
                 camera.aspect = window.innerWidth / window.innerHeight;
 
                 if (wasMobile !== State.isMobile) {
                     const newBaseFov = State.isMobile ? 65 : 55;
                     camera.fov = newBaseFov;
                     camera.userData.baseFov = newBaseFov;
-
-                    // bloom toggle
-                    if (bloomPass) bloomPass.enabled = !State.isMobile;
                 }
 
                 camera.updateProjectionMatrix();
+
+                // Update renderer - FORCE DPR to 1.0 on resize for MacBook Air
+                const q = getQualitySettings();
+                const dpr = Math.min(window.devicePixelRatio, q.dprCap, State.qualityTier === 'LOW' ? 1.0 : q.dprCap);
+                renderer.setPixelRatio(dpr);
                 renderer.setSize(window.innerWidth, window.innerHeight);
+
                 if (composer) composer.setSize(window.innerWidth, window.innerHeight);
 
-                const DPR_CAP = State.isMobile ? 1.0 : 1.15; // 1.15 max on desktop, 1.0 on mobile
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
-
-            }, 120);
+            }, 250); // Increased debounce for better performance
         });
 
         window.addEventListener('orientationchange', () => {
@@ -2847,9 +3219,21 @@
             if (State.started) return;
             if (!sceneReady) return;
 
+            // ✅ Hard reset scroll + progress at the moment START is pressed
+            window.scrollTo(0, 0);
+            SCROLL_CTRL.currentY = 0;
+            SCROLL_CTRL.targetY = 0;
+
+            State.progress = 0;
+            State.targetProgress = 0;
+            State.section = 0;
+
             State.started = true;
-            onScroll();       // sets State.targetProgress based on current scroll position
+
+            onScroll();
             updatePanels();
+
+
 
             if (startBtn) {
                 startBtn.disabled = true;
