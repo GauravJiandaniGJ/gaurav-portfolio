@@ -34,7 +34,7 @@ const timelineItems = [
   { date: 'Mar 2020', title: 'AReceivables', color: 'bg-yellow-500' },
   { date: 'Jun 2020', title: 'ProjectX', color: 'bg-emerald-500' },
   { date: 'Mar 2021', title: 'Vebcommerce', color: 'bg-violet-500' },
-  { date: 'Dec 2023 - Ongoing', title: 'Wholesale Pricing Discount', color: 'bg-rose-500' },
+  { date: 'Dec 2021', title: 'Wholesale Pricing Discount', color: 'bg-rose-500' },
 ]
 </script>
 
