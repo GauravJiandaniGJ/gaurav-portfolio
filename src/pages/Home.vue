@@ -20,7 +20,7 @@
     <!-- LIVE PROJECTS -->
     <section id="projects" class="px-2 sm:px-3 md:px-5 flex flex-col items-center">
       <h2 class="text-2xl md:text-3xl font-bold mb-5 text-blue-600 text-center w-full">
-        Live Projects
+        Weekend Builds
       </h2>
       <div class="w-full flex flex-row justify-center gap-8 flex-wrap">
         <div v-for="project in personalProjects" :key="project.id"

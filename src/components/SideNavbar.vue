@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import profileImg from '/static/profile.jpeg'
 
@@ -9,7 +9,35 @@ const props = defineProps({
 
 const store = useStore()
 const isDark = computed(() => store.getters.isDarkMode)
-const currentYearMinus1996 = computed(() => new Date().getFullYear() - 1996)
+const birthDate = new Date(1996, 7, 28) // Month is zero-based: 7 => August
+const today = ref(new Date())
+
+function getAgeFromDate (dob, currentDate) {
+  let age = currentDate.getFullYear() - dob.getFullYear()
+  const hasBirthdayPassedThisYear =
+    currentDate.getMonth() > dob.getMonth() ||
+    (currentDate.getMonth() === dob.getMonth() && currentDate.getDate() >= dob.getDate())
+
+  if (!hasBirthdayPassedThisYear) age -= 1
+  return age
+}
+
+let refreshTimerId = null
+onMounted(() => {
+  // Keep date-based values accurate if the tab stays open across day/year boundaries.
+  refreshTimerId = window.setInterval(() => {
+    today.value = new Date()
+  }, 60 * 60 * 1000)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimerId) window.clearInterval(refreshTimerId)
+})
+
+const currentAge = computed(() => {
+  return getAgeFromDate(birthDate, today.value)
+})
+const mediumUrl = 'https://medium.com/@jiandanigaurav'
 const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-400'
 </script>
 
@@ -53,9 +81,9 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
       <div class="px-2 sm:px-6 mt-3">
         <ul class="divide-y divide-gray-200 dark:divide-gray-700">
           <!-- PHONE -->
-          <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
+          <li class="py-2 sm:py-3 flex items-center rounded select-none">
             <span
-              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -65,16 +93,16 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
             </span>
             <div class="ml-3 flex-1 min-w-0">
               <div
-                class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base">
+                class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                 (+91) 971-293-4085</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Mobile</div>
             </div>
           </li>
 
           <!-- EMAIL -->
-          <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
+          <li class="py-2 sm:py-3 flex items-center rounded select-none">
             <span
-              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -84,16 +112,45 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
             </span>
             <div class="ml-3 flex-1 min-w-0">
               <div
-                class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base">
+                class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                 jiandanigaurav@gmail.com</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Personal</div>
             </div>
           </li>
 
+          <!-- MEDIUM -->
+          <li class="py-2 sm:py-3">
+            <a :href="mediumUrl" target="_blank" rel="noopener noreferrer"
+              class="flex items-center group transition rounded select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+              <span
+                :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+                aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="w-full h-full" aria-hidden="true">
+                  <path fill="currentColor"
+                    d="M13.54 12.49c0 3.77-3.03 6.83-6.77 6.83S0 16.26 0 12.49s3.03-6.82 6.77-6.82 6.77 3.05 6.77 6.82zm7.43 0c0 3.55-1.51 6.43-3.38 6.43-1.86 0-3.37-2.88-3.37-6.43s1.51-6.43 3.37-6.43 3.38 2.88 3.38 6.43zM24 12.49c0 3.18-.53 5.76-1.19 5.76-.66 0-1.19-2.58-1.19-5.76s.53-5.76 1.19-5.76c.66 0 1.19 2.58 1.19 5.76z" />
+                </svg>
+              </span>
+              <div class="ml-3 flex-1 min-w-0">
+                <div
+                  class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base truncate">
+                  Medium Blog
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 truncate">medium.com/@jiandanigaurav</div>
+              </div>
+              <span class="ml-2 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
+                aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="1.7"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 5l6 5-6 5" />
+                </svg>
+              </span>
+            </a>
+          </li>
+
           <!-- LOCATION -->
-          <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
+          <li class="py-2 sm:py-3 flex items-center rounded select-none">
             <span
-              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass"
               aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" class="w-full h-full" stroke="currentColor" stroke-width="1.75"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -103,16 +160,16 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
             </span>
             <div class="ml-3 flex-1 min-w-0">
               <div
-                class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base">
+                class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                 Plot no. 140, Ward 7/A</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">Gandhidham, Gujarat</div>
             </div>
           </li>
 
           <!-- BIRTHDAY (your exact cake SVG, color via currentColor) -->
-          <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
+          <li class="py-2 sm:py-3 flex items-center rounded select-none">
             <span
-              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass"
               aria-hidden="true">
               <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
                 xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 439.639 439.639" fill="currentColor"
@@ -160,16 +217,16 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
             </span>
             <div class="ml-3 flex-1 min-w-0">
               <div
-                class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base">
+                class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                 28th August, 1996</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">{{ currentYearMinus1996 }} Years</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ currentAge }} Years</div>
             </div>
           </li>
 
           <!-- DEGREE -->
-          <li class="py-2 sm:py-3 flex items-center group transition rounded cursor-pointer select-none">
+          <li class="py-2 sm:py-3 flex items-center rounded select-none">
             <span
-              :class="iconClass + ' transition-all duration-200 group-hover:scale-110 group-hover:text-blue-500'"
+              :class="iconClass"
               aria-hidden="true">
               <svg viewBox="0 0 512 512" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round"
                 stroke-linejoin="round" class="w-full h-full">
@@ -181,7 +238,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
             </span>
             <div class="ml-3 flex-1 min-w-0">
               <div
-                class="font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200 group-hover:text-blue-500 text-sm sm:text-base">
+                class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                 Master of Science in IT</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">DA-IICT</div>
             </div>
