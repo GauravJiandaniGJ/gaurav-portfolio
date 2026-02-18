@@ -48,7 +48,7 @@ const iconClass = 'flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-b
 
   <transition name="slide">
     <aside v-if="drawer"
-      class="fixed top-0 left-0 z-50 h-full w-[98vw] max-w-[400px] sm:w-[32rem] sm:max-w-sm lg:w-[36rem] bg-gray-200 dark:bg-[#393939] shadow-sm flex flex-col transition-transform duration-300 overflow-y-auto custom-scrollbar">
+      class="fixed top-0 left-0 z-50 h-full w-[98vw] max-w-[400px] sm:w-[32rem] sm:max-w-sm lg:w-[36rem] bg-gray-200 dark:bg-[#252525] shadow-sm flex flex-col transition-transform duration-300 overflow-y-auto custom-scrollbar">
 
       <!-- Close icon for mobile -->
       <div class="flex justify-end pt-3 pr-3 sm:pt-4 sm:pr-4 lg:hidden">

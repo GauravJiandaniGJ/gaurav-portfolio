@@ -1,5 +1,5 @@
 <template>
-    <div class="project-card w-full flex flex-col p-5 bg-[#f2f2f2] border border-gray-200 rounded-lg shadow-sm dark:bg-[#272727] dark:border-gray-600 cursor-pointer hover:shadow-sm transition"
+    <div class="project-card w-full flex flex-col p-5 bg-[#f2f2f2] rounded-lg shadow-sm dark:bg-[#1c1c1c] dark:border-gray-600 cursor-pointer hover:shadow-sm transition"
         @click="$router.push('/project/' + project.id)">
         <div class="flex items-center mb-5 gap-2">
             <div v-if="project.logo" class="logo-wrapper">

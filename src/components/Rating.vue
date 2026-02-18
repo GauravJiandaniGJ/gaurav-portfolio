@@ -126,7 +126,7 @@ onUnmounted(() => {
 
 <template>
 <div
-  class="group mx-auto w-full max-w-3xl bg-[#f2f2f2] dark:bg-[#272727] rounded-lg shadow-sm relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.005] dark:hover:bg-[#212121] hover:shadow-sm">
+  class="group mx-auto w-full max-w-3xl bg-[#f2f2f2] dark:bg-[#1c1c1c] rounded-lg shadow-sm relative transition-all duration-400 overflow-hidden hover:-translate-y-1 hover:scale-[1.005] dark:hover:bg-[#212121] hover:shadow-sm">
 
   <!-- Shine Layer -->
   <span class="shine"></span>
@@ -134,7 +134,7 @@ onUnmounted(() => {
   <!-- Chart section -->
   <div class="flex justify-center mx-5 pt-5 pb-5 animate-fade-in relative z-10">
     <div
-      class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#383838] rounded-lg px-1 py-1 shadow-md"
+      class="chart-spot relative z-20 bg-gray-50 mb-5 dark:bg-[#292929] rounded-lg px-1 py-1 shadow-md"
       style="height:180px; max-width:100vw; width:90%;">
       <canvas ref="chartRef" style="width:100% !important; height:100% !important;"></canvas>
     </div>

@@ -29,10 +29,10 @@ watch(isDarkMode, updateHtmlTheme, { immediate: true })
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white dark:bg-[#303030] transition">
+  <div class="min-h-screen flex flex-col bg-white dark:bg-black transition">
     <SideNavbar :drawer="sidebarOpen" @close-drawer="sidebarOpen = false" />
     <TopNav @drawer="toggleSidebar" />
-    <main class="flex-1 pt-24 bg-white dark:bg-[#303030] min-h-screen">
+    <main class="flex-1 pt-24 bg-white dark:bg-black min-h-screen">
       <div class="w-full px-5">
         <router-view />
       </div>
