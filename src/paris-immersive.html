@@ -1239,21 +1239,95 @@
     <!-- SCROLL CONTAINER -->
     <div class="scroll-container" id="scrollContainer"></div>
 
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
     <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
-        import { RGBELoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/RGBELoader.js';
-        import { EffectComposer } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/postprocessing/UnrealBloomPass.js';
-        import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/GLTFLoader.js';
-        import { DRACOLoader } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/loaders/DRACOLoader.js';
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+        import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
+        import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/meshopt_decoder.module.js';
         import { siteContent } from './data/siteContent.js';
-        import { Sky } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/objects/Sky.js';
+        import { Sky } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Sky.js';
+        import { CloudManager, CLOUD_OCCLUSION_CONFIG, WorldStreamingManager, WORLD_STREAMING_CONFIG } from './three/CloudManager.js';
 
 
         console.log('🚀 Script starting (Module Mode)...');
         // ✅ Prevent browser from restoring previous scroll position on reload/back/forward
         if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+        /*
+         * WHAT CHANGED (cloud curtain load gate + safe camera path):
+         * 1) Added strict hero/bg grouping with a bg visibility gate (hidden at HOME, revealed only after load+compile).
+         * 2) Added deterministic cloud curtain modes: HOME baseline, transition strong mask, reveal fade, and fully off.
+         * 3) Preload now includes mountain1.glb and runs through LoadingManager + GLTF cache; startup compileAsync reduces first-reveal stutter.
+         * 4) Streaming thresholds were pushed farther so background chunks begin earlier, with existing staged fade preserved.
+         * 5) Camera path is now defined by centralized safe waypoints and reinforced collision clearance; mouse never drives camera.
+         */
+
+        // =====================
+        // SCENE CONFIG — single place to tweak the visual look
+        // =====================
+        const SCENE_CONFIG = {
+            // Renderer
+            exposure: 1.1,
+            exposureLow: 0.9,
+            toneMapping: THREE.ACESFilmicToneMapping,
+            toneMappingLow: THREE.LinearToneMapping,
+
+            // Fog — subtle blue-grey haze, NOT orange
+            fogColor: 0x8a9bb5,
+            fogDensity: 0.00012,
+
+            // Sky shader
+            skyTurbidity: 3.5,
+            skyRayleigh: 0.8,
+            skyMieCoefficient: 0.003,
+            skyMieDirectionalG: 0.92,
+            sunElevation: 8.0,
+            sunAzimuth: 245,
+
+            // Sun directional light
+            sunLightColor: 0xffeedd,
+            sunLightIntensity: 3.0,
+
+            // Sun sprite
+            sunSpriteScale: 180,
+            sunSpriteOpacity: 0.6,
+            sunSpriteDistance: 2800,
+
+            // Hemisphere fill light
+            hemiSkyColor: 0xffebc8,
+            hemiGroundColor: 0x3a4a5c,
+            hemiIntensity: 0.9,
+            hemiIntensityLow: 1.25,
+
+            // Ambient fill (prevents black silhouettes on LOW without env map)
+            ambientColor: 0xfff5e6,
+            ambientIntensity: 0.25,
+            ambientIntensityLow: 0.65,
+
+            // Grass
+            grassColor: 0x5a8a4a,
+            grassRepeat: 60,
+
+            // Camera
+            cameraDamping: 0.045,
+            cameraDampingMax: 0.16,
+            cameraMinY: 50,
+            lookAtYClampMin: 50,
+            lookAtYClampMax: 180,
+        };
 
 
         // State
@@ -1267,14 +1341,136 @@
             frameInterval: 1000 / 60, // Target 60 FPS
 
             // ✅ quality tier (can change at runtime now)
-            qualityTier: 'HIGH',
-            userForcedTier: 'HIGH',  // if you ever want to force it manually
+            qualityTier: 'MEDIUM',       // safe default until auto-detect runs
+            userForcedTier: null,        // null = allow auto-detect to work
 
             // ✅ FPS monitoring (auto downgrade)
-            fps: 60,
+            fps: 30,
             fpsSamples: [],
             fpsLastSampleTs: 0,
-            lowFpsStrikes: 0
+            lowFpsStrikes: 0,
+
+            // ✅ Idle throttling
+            lastInputTime: performance.now(),
+            isIdle: false,
+
+            // ✅ Adaptive DPR
+            currentDpr: 1.0,
+            dprFloor: 0.75,
+            streamingReadiness: 0
+        };
+
+        const URL_PARAMS = new URLSearchParams(window.location.search);
+        const DEBUG_STREAMING = URL_PARAMS.get('debug') === '1';
+        const DEBUG_CLOUD_PRELOAD = URL_PARAMS.get('cloudDebug') === '1';
+        const DEFAULT_LAYOUT_SEED_LABEL = 'paris-city-v1';
+
+        // Cloud transition + camera safety tuning.
+        const HOME_CLOUD_RANGE = [0.0, 0.03];
+        const START_CLOUD_RANGE = [0.03, 0.12];
+        const CLEAR_CLOUD_RANGE = [0.12, 0.20];
+        const END_CLOUD_RANGE = [1.0, 1.0]; // intentionally disabled for normal sections
+        const CLOUD_DENSITY = 1.0;
+        const CLOUD_OPACITY = 0.98;
+        const HOME_CLOUD_OPACITY = 0.97;
+        const MASK_CLOUD_OPACITY = 1.0;
+        const CLOUD_FADE_DURATION = 0.8;
+        const CLOUD_DRIFT_SPEEDS = { left: 0.06, right: 0.085, ambient: 0.038 };
+        const CLOUD_HOME_DENSITY = 1.0;
+        const CLOUD_TRANSITION_DENSITY = 0.95;
+        const SECTION_TRIGGER_HYSTERESIS = 0.008;
+        const CAMERA_SAFE_DISTANCE = 142;
+        const BG_READY_THRESHOLD = 0.62;
+        const BG_REVEAL_PROGRESS = 0.09;
+        const BG_HIDE_PROGRESS = 0.035;
+        const BG_REVEAL_TIMEOUT_MS = 2800;
+        const HOME_FOG_DENSITY = 0.00072;
+        const TRANSITION_FOG_DENSITY = 0.00095;
+        const REVEAL_FOG_DENSITY = 0.00032;
+        const MAX_RENDER_DPR = 1.25;
+        const SceneState = Object.freeze({
+            BOOT_LOADING: 'BOOT_LOADING',
+            HOME_READY: 'HOME_READY',
+            TRANSITION: 'TRANSITION',
+            SECTION_READY: 'SECTION_READY'
+        });
+        const SCENE_FLOW_CONFIG = {
+            bootTimeoutMs: 3200,
+            homeTransitionMs: 1250,
+            sectionTransitionMs: 900,
+            revealAt: 0.62,
+            homeReturnMaskUntil: 0.72,
+            transitionSections: new Set([1])
+        };
+
+        const CLOUD_TRANSITION_CONFIG = {
+            ...CLOUD_OCCLUSION_CONFIG,
+            HOME_CLOUD_RANGE,
+            START_CLOUD_RANGE,
+            CLEAR_CLOUD_RANGE,
+            END_CLOUD_RANGE,
+            TRANSITION_CLOUD_RANGE: START_CLOUD_RANGE,
+            CLOUD_DENSITY,
+            CLOUD_OPACITY,
+            HOME_CLOUD_OPACITY,
+            MASK_CLOUD_OPACITY,
+            CLOUD_FADE_DURATION,
+            CLOUD_DRIFT_SPEEDS,
+            CLOUD_HOME_DENSITY,
+            CLOUD_TRANSITION_DENSITY,
+            SECTION_TRIGGER_HYSTERESIS,
+            cloudCurve: {
+                homeStrength: 1.0,
+                revealMinStrength: 0.16,
+                postStrength: 0.0
+            },
+            depthOffset: {
+                home: -520,
+                transition: -240,
+                section: -1200
+            },
+            revealReadinessThreshold: BG_READY_THRESHOLD
+        };
+
+        const STREAMING_ZONE_THRESHOLDS = {
+            HERO: { enter: 0.0, exit: 0.14, preloadStart: 0.0 },
+            MID: { enter: 0.06, exit: 0.9, preloadStart: 0.02 },
+            FAR: { enter: 0.56, exit: 1.0, preloadStart: 0.36 }
+        };
+
+        const WORLD_STREAMING_RUNTIME_CONFIG = {
+            ...WORLD_STREAMING_CONFIG,
+            streamGate: CLOUD_TRANSITION_CONFIG.streamGate,
+            readinessThreshold: CLOUD_TRANSITION_CONFIG.revealReadinessThreshold,
+            zones: [
+                { ...WORLD_STREAMING_CONFIG.zones[0], ...STREAMING_ZONE_THRESHOLDS.HERO },
+                { ...WORLD_STREAMING_CONFIG.zones[1], ...STREAMING_ZONE_THRESHOLDS.MID },
+                { ...WORLD_STREAMING_CONFIG.zones[2], ...STREAMING_ZONE_THRESHOLDS.FAR }
+            ]
+        };
+        const FOG_TRANSITION_DAMP = 0.12;
+
+        // Streaming distance bands + fade behavior (tune these first)
+        const STREAMING_BANDS = {
+            city: {
+                // Preload from farther away, but still fade staged to avoid sudden pop-in.
+                LOW: { farStart: 2480, midStart: 1620, nearStart: 910, nearFull: 570, fadeMsMin: 420, fadeMsMax: 720, hysteresis: 0.10, zoneSize: 360 },
+                MEDIUM: { farStart: 3050, midStart: 1980, nearStart: 1080, nearFull: 680, fadeMsMin: 500, fadeMsMax: 800, hysteresis: 0.10, zoneSize: 400 },
+                HIGH: { farStart: 3600, midStart: 2360, nearStart: 1260, nearFull: 780, fadeMsMin: 560, fadeMsMax: 860, hysteresis: 0.10, zoneSize: 440 }
+            },
+            tree: {
+                LOW: { farStart: 1320, midStart: 900, nearStart: 560, nearFull: 350, fadeMsMin: 360, fadeMsMax: 660, hysteresis: 0.10, zoneSize: 240 },
+                MEDIUM: { farStart: 1580, midStart: 1060, nearStart: 680, nearFull: 420, fadeMsMin: 420, fadeMsMax: 720, hysteresis: 0.10, zoneSize: 280 },
+                HIGH: { farStart: 1840, midStart: 1240, nearStart: 790, nearFull: 490, fadeMsMin: 480, fadeMsMax: 780, hysteresis: 0.10, zoneSize: 320 }
+            }
+        };
+
+        // Density tuning for near-start feel and vegetation clustering
+        const DENSITY_TUNING = {
+            cityStarterClusters: { LOW: 8, MEDIUM: 16, HIGH: 24 },
+            treeClusterCount: { LOW: 10, MEDIUM: 18, HIGH: 28 },
+            treeClusterMin: 3,
+            treeClusterMax: 7
         };
 
 
@@ -1283,35 +1479,71 @@
         // =====================
         const QUALITY_PRESETS = {
             LOW: {
-                particleCount: 180,     // ✅ big drop
-                cloudCount: 3,          // ✅ big drop
-                shadowMapSize: 0,       // ✅ not used (we disable shadows)
-                maxLodDistance: 700,
-                cullDistance: 850,      // ✅ more aggressive
+                particleCount: 180,
+                cloudCount: 2,
+                shadowMapSize: 0,
+                maxLodDistance: 500,
+                proxyDistance: 600,      // proxy starts here (must be > maxLodDistance)
+                impostorDistance: 800,   // impostor starts here (must be > proxyDistance)
+                cullDistance: 2200,      // impostors visible far out
                 enableBloom: false,
-                dprCap: 0.65,           // ✅ huge GPU saver
-                buildingCount: 24       // ✅ fewer buildings
+                dprCap: 1.0,
+                buildingCount: 24,
+                terrainSegments: 24,
+                riverSegments: 30,
+                riverRadialSegments: 4,
+                pathSegments: 20,
+                grassAnisotropy: 4,
+                treeCount: 64,
+                treeLodCount: 24,
+                treeProxyDistance: 170,
+                treeCullDistance: 820,
+                treeZoneSize: 260,
             },
 
             MEDIUM: {
                 particleCount: 800,
-                cloudCount: 10,
+                cloudCount: 6,
                 shadowMapSize: 512,
-                maxLodDistance: 1200,
-                cullDistance: 1400,
+                maxLodDistance: 800,
+                proxyDistance: 900,
+                impostorDistance: 1400,
+                cullDistance: 3000,       // impostors visible far out
                 enableBloom: true,
-                dprCap: 0.85,
-                buildingCount: 54
+                dprCap: 1.15,
+                buildingCount: 34,
+                terrainSegments: 36,
+                riverSegments: 42,
+                riverRadialSegments: 6,
+                pathSegments: 30,
+                grassAnisotropy: 8,
+                treeCount: 92,
+                treeLodCount: 72,
+                treeProxyDistance: 240,
+                treeCullDistance: 1300,
+                treeZoneSize: 300,
             },
             HIGH: {
                 particleCount: 1200,
-                cloudCount: 14,
-                shadowMapSize: 2048,     // ✅ bump shadows
-                maxLodDistance: 1800,
-                cullDistance: 2000,      // ✅ avoid pop
+                cloudCount: 10,
+                shadowMapSize: 1024,
+                maxLodDistance: 1200,
+                proxyDistance: 1400,
+                impostorDistance: 2000,
+                cullDistance: 3500,       // impostors visible far out
                 enableBloom: true,
-                dprCap: 1.0,             // ✅ capped for MacBook Air performance
-                buildingCount: 72
+                dprCap: 1.25,
+                buildingCount: 46,
+                terrainSegments: 56,
+                riverSegments: 60,
+                riverRadialSegments: 8,
+                pathSegments: 50,
+                grassAnisotropy: 16,
+                treeCount: 170,
+                treeLodCount: 132,
+                treeProxyDistance: 300,
+                treeCullDistance: 1650,
+                treeZoneSize: 340,
             }
 
         };
@@ -1337,16 +1569,18 @@
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
             const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
 
-            // Check for known low-power GPUs
-            const lowPowerGPUs = ['Intel', 'HD Graphics', 'UHD Graphics', 'Iris', 'Mali', 'Adreno', 'PowerVR'];
+            // Check for known low-power / integrated GPUs (covers Apple Silicon, mobile, software renderers)
+            const lowPowerGPUs = ['Intel', 'HD Graphics', 'UHD Graphics', 'Iris', 'Mali',
+                'Adreno', 'PowerVR', 'Apple', 'Qualcomm', 'SwiftShader'];
             const isLowPower = lowPowerGPUs.some(gpu => renderer.includes(gpu));
 
             // Check device memory (if available)
             const memory = navigator.deviceMemory || 4;
             const cores = navigator.hardwareConcurrency || 4;
 
-            if (isLowPower || memory < 4 || cores < 4) return 'LOW';
-            if (memory >= 8 && cores >= 8 && !isLowPower) return 'HIGH';
+            // Only HIGH if proven discrete GPU
+            if (memory >= 8 && cores >= 8 && /NVIDIA|AMD|RTX|GTX|Radeon/.test(renderer)) return 'HIGH';
+            if (isLowPower || memory < 6 || cores < 6) return 'LOW';
             return 'MEDIUM';
         }
 
@@ -1374,17 +1608,31 @@
         const loaderBar = document.getElementById('loaderBar');
         const loaderPct = document.getElementById('loaderPct');
         const loaderModel = document.getElementById('loaderModel');
+        let debugHud = null;
+        let debugHudLastMs = 0;
+
+        if (DEBUG_CLOUD_PRELOAD) {
+            debugHud = document.createElement('div');
+            debugHud.style.cssText = [
+                'position:fixed',
+                'left:12px',
+                'top:12px',
+                'z-index:2200',
+                'padding:8px 10px',
+                'background:rgba(0,0,0,0.62)',
+                'color:#e8edf7',
+                'font:12px/1.35 monospace',
+                'border:1px solid rgba(255,255,255,0.22)',
+                'border-radius:8px',
+                'pointer-events:none',
+                'white-space:pre'
+            ].join(';');
+            debugHud.textContent = 'debug hud booting...';
+            document.body.appendChild(debugHud);
+        }
 
 
-        // Mouse Tracking (keep only for camera parallax; raycast targets reduced)
-        const mouse = new THREE.Vector2(0, 0);
-        const mouseSmooth = new THREE.Vector2(0, 0);
-        const MOUSE_SMOOTHING = 0.08; // lower = smoother
-
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        // Pointer camera parallax intentionally disabled (scroll-only cinematic camera).
 
         // Cinematic Text Splitter - preserves line breaks
         function splitText() {
@@ -1427,9 +1675,19 @@
         let scene, camera, renderer, composer, bloomPass;
         let eiffelTower, scooter, particles, serverRacks, dataSpheres, codeBlocks, cityGroup, groundMesh;
 
+        // Reusable frustum culling objects (avoid per-frame allocation)
+        const _frustum = new THREE.Frustum();
+        const _projMatrix = new THREE.Matrix4();
+        const _sphere = new THREE.Sphere();
+
         // Scene groups tracking (visibility by section)
         const groups = {
+            heroRoot: null,
+            bgRoot: null,
+            heroForeground: null,
             city: null,
+            trees: null,
+            mountains: null,
             eiffel: null,
             particles: null,
             scooter: null,
@@ -1439,100 +1697,182 @@
             clouds: null,
             terrain: null  // NEW: terrain with grass and river
         };
+        const sceneCurves = {
+            mainPath: null,
+            river: null,
+            riverHalfWidth: 90
+        };
+        let grassTerrainMesh = null;
 
+        const treeLods = [];
+        const treeZones = [];
+        const treeProxyZones = [];
+        const treeColliders = []; // { x, z, r }
+        const streamTransitions = new Set(); // only objects currently fading
 
-        // Materials - PBR Realism
-        const MATERIALS = {
-            asphalt: new THREE.MeshStandardMaterial({
-                color: 0x151515,
-                roughness: 0.95,
-                metalness: 0.03
-            }),
-            limestone: new THREE.MeshStandardMaterial({
-                color: 0x7f7569,
-                roughness: 0.92,
-                metalness: 0.0
-            }),
-            zinc: new THREE.MeshStandardMaterial({
-                color: 0x353942,
-                roughness: 0.6,
-                metalness: 0.4
-            }),
-            iron: new THREE.MeshStandardMaterial({
-                color: 0x2b2b2b,
-                roughness: 0.7,
-                metalness: 0.4
-            }),
-            glass: new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0.1,
-                roughness: 0.05,
-                transmission: 0.9,
-                thickness: 0.5,
-            }),
-            emissiveGreen: new THREE.MeshStandardMaterial({
-                color: 0x00ff00,
-                emissive: 0x00ff00,
-                emissiveIntensity: 2
-            }),
-            emissivePurple: new THREE.MeshStandardMaterial({
-                color: 0x8b5cf6,
-                roughness: 0.2,
-                metalness: 0.8,
-                emissive: 0x4c1d95,
-                emissiveIntensity: 0.8
-            }),
-            cheapGlass: new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                roughness: 0.18,
-                metalness: 0.0,
-                transmission: 0.85,
-                thickness: 0.35,
-                ior: 1.45,
-                transparent: true
-            }),
-            // NEW: Land and Environment Materials
-            grass: new THREE.MeshStandardMaterial({
-                color: 0x4a6b3e,
-                roughness: 0.95,
-                metalness: 0.0,
-            }),
-            river: new THREE.MeshPhysicalMaterial({
-                color: 0x2a5a6a,
-                metalness: 0.1,
-                roughness: 0.1,
-                transmission: 0.6,
-                thickness: 2.0,
-                transparent: true,
-                opacity: 0.85,
-                envMapIntensity: 1.5
-            }),
-            riverBed: new THREE.MeshStandardMaterial({
-                color: 0x3d4a3a,
-                roughness: 0.9,
-                metalness: 0.0
-            }),
-            dirt: new THREE.MeshStandardMaterial({
-                color: 0x5c4a3a,
-                roughness: 1.0,
-                metalness: 0.0
-            }),
-            path: new THREE.MeshStandardMaterial({
-                color: 0x8a7a6a,
-                roughness: 0.9,
-                metalness: 0.0
-            })
-
+        let cityPlacedCount = 0;
+        let treePlacedCount = 0;
+        let cloudManager = null;
+        let worldStreamingManager = null;
+        let cloudCurtainState = 'HOME_IDLE';
+        let previousCloudCurtainState = 'HOME_IDLE';
+        let compileAllPromise = null;
+        const sceneFlow = {
+            state: SceneState.BOOT_LOADING,
+            lastSection: 0,
+            bootDeadlineMs: 0,
+            transition: {
+                active: false,
+                fromSection: 0,
+                toSection: 0,
+                startMs: 0,
+                durationMs: SCENE_FLOW_CONFIG.homeTransitionMs,
+                deadlineMs: 0,
+                direction: 1
+            }
+        };
+        let bgRevealLocked = true;
+        const bgGateState = {
+            assetsLoaded: false,
+            compiled: false,
+            ready: false,
+            revealDeadlineMs: 0,
+            timedOut: false
         };
 
-        // GLTF Loading
-        const gltfLoader = new GLTFLoader();
+        const _groundRaycaster = new THREE.Raycaster();
+        const _groundRayOrigin = new THREE.Vector3();
+        const _groundRayDir = new THREE.Vector3(0, -1, 0);
+        const _groundHits = [];
+        const _readinessForward = new THREE.Vector3();
+        const _readinessDir = new THREE.Vector3();
+        const _cameraSafeDirection = new THREE.Vector2();
+        const _cameraSafeTarget = new THREE.Vector3();
+
+        const CAMERA_PATH_TUNING = {
+            CAMERA_SAFE_DISTANCE,
+            cameraGroundClearance: 24, // Keeps cinematic camera above terrain undulations.
+            collisionBlend: 0.35, // Soft push avoids jitter when camera enters a keep-out bubble.
+            maxCollisionPush: 22, // Caps one-frame correction while still resolving deep overlaps.
+            lookAheadT: 0.014,
+            lookAtForwardBlend: 0.24
+        };
+
+
+        // Materials - PBR Realism (tier-aware: LOW avoids expensive transmission passes)
+        function createMaterials(tier) {
+            const isLow = tier === 'LOW';
+            const isMed = tier === 'MEDIUM';
+
+            return {
+                asphalt: new THREE.MeshStandardMaterial({
+                    color: 0x151515,
+                    roughness: 0.95,
+                    metalness: 0.03
+                }),
+                limestone: new THREE.MeshStandardMaterial({
+                    color: 0x7f7569,
+                    roughness: 0.92,
+                    metalness: 0.0
+                }),
+                zinc: new THREE.MeshStandardMaterial({
+                    color: 0x353942,
+                    roughness: 0.6,
+                    metalness: 0.4
+                }),
+                iron: new THREE.MeshStandardMaterial({
+                    color: 0x2b2b2b,
+                    roughness: 0.7,
+                    metalness: 0.4
+                }),
+                glass: isLow
+                    ? new THREE.MeshStandardMaterial({ color: 0xaaccee, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.35 })
+                    : new THREE.MeshPhysicalMaterial({
+                        color: 0xffffff,
+                        metalness: 0.1,
+                        roughness: 0.05,
+                        transmission: isMed ? 0.5 : 0.9,
+                        thickness: 0.5,
+                    }),
+                emissiveGreen: new THREE.MeshStandardMaterial({
+                    color: 0x00ff00,
+                    emissive: 0x00ff00,
+                    emissiveIntensity: 2
+                }),
+                emissivePurple: new THREE.MeshStandardMaterial({
+                    color: 0x8b5cf6,
+                    roughness: 0.2,
+                    metalness: 0.8,
+                    emissive: 0x4c1d95,
+                    emissiveIntensity: 0.8
+                }),
+                cheapGlass: isLow
+                    ? new THREE.MeshStandardMaterial({ color: 0xaaccee, roughness: 0.25, transparent: true, opacity: 0.3 })
+                    : new THREE.MeshPhysicalMaterial({
+                        color: 0xffffff,
+                        roughness: 0.18,
+                        metalness: 0.0,
+                        transmission: isMed ? 0.4 : 0.85,
+                        thickness: 0.35,
+                        ior: 1.45,
+                        transparent: true
+                    }),
+                // Land and Environment Materials
+                grass: new THREE.MeshStandardMaterial({
+                    color: SCENE_CONFIG.grassColor,
+                    roughness: 0.85,
+                    metalness: 0.0,
+                }),
+                river: isLow
+                    ? new THREE.MeshStandardMaterial({ color: 0x2a5a6a, roughness: 0.3, metalness: 0.15, transparent: true, opacity: 0.75 })
+                    : new THREE.MeshPhysicalMaterial({
+                        color: 0x2a5a6a,
+                        metalness: 0.1,
+                        roughness: 0.1,
+                        transmission: isMed ? 0.3 : 0.6,
+                        thickness: 2.0,
+                        transparent: true,
+                        opacity: 0.85,
+                        envMapIntensity: 1.5
+                    }),
+                riverBed: new THREE.MeshStandardMaterial({
+                    color: 0x3d4a3a,
+                    roughness: 0.9,
+                    metalness: 0.0
+                }),
+                dirt: new THREE.MeshStandardMaterial({
+                    color: 0x5c4a3a,
+                    roughness: 1.0,
+                    metalness: 0.0
+                }),
+                path: new THREE.MeshStandardMaterial({
+                    color: 0x9a8e80,
+                    roughness: 0.92,
+                    metalness: 0.0
+                })
+            };
+        }
+        let MATERIALS = createMaterials(State.qualityTier);
+
+        // GLTF Loading (shared manager keeps preload progress deterministic).
+        const loadingManager = new THREE.LoadingManager();
+        const gltfLoader = new GLTFLoader(loadingManager);
         const dracoLoader = new DRACOLoader();
         dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
         gltfLoader.setDRACOLoader(dracoLoader);
+        gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+        loadingManager.onStart = (_url, loaded, total) => {
+            if (DEBUG_CLOUD_PRELOAD) console.log(`📥 [manager] start ${loaded}/${total}`);
+        };
+        loadingManager.onProgress = (_url, loaded, total) => {
+            if (DEBUG_CLOUD_PRELOAD) console.log(`📥 [manager] progress ${loaded}/${total}`);
+        };
+        loadingManager.onLoad = () => {
+            if (DEBUG_CLOUD_PRELOAD) console.log('✅ [manager] all model requests completed');
+        };
 
         const modelLoadingState = {
-            totalModels: 5, // eiffel, scooter, building1-3 (building4 removed)
+            totalModels: 10, // eiffel, scooter, building1-3, tree1-4, mountain1
             loadedModels: 0,
             currentModelProgress: 0,
             ready: false
@@ -1542,8 +1882,11 @@
         const loadedModels = {
             eiffelTower: null,
             scooter: null,
-            buildings: []
+            buildings: [],
+            trees: [],
+            mountains: []
         };
+        const gltfCache = new Map(); // url -> gltf; avoids re-fetch/re-decode if reused
 
         function setLoaderProgress(pct) {
             const clamped = Math.max(0, Math.min(100, pct));
@@ -1558,8 +1901,9 @@
             return Math.min(100, base + current);
         }
 
+        // R2 CDN URLs are content-addressed. If you update a model file,
+        // append a ?v=<hash> query param to bust the CDN cache.
         const ASSET_BASE_URL = 'https://pub-311583034e5e4275b8fb5d11ad15c564.r2.dev';
-
 
         // If you want local dev, keep it empty '' or switch by environment.
 
@@ -1572,13 +1916,21 @@
         function loadModel(path, name) {
             return new Promise((resolve) => {
                 const url = assetUrl(path);
+                if (gltfCache.has(url)) {
+                    if (DEBUG_CLOUD_PRELOAD) console.log(`🧠 [cache-hit] ${name}`);
+                    resolve(gltfCache.get(url));
+                    return;
+                }
+                if (DEBUG_CLOUD_PRELOAD) console.log(`📦 [load-start] ${name}`);
                 if (loaderModel) loaderModel.textContent = `Loading: ${name}`;
 
                 gltfLoader.load(
                     url,
                     (gltf) => {
+                        gltfCache.set(url, gltf);
                         modelLoadingState.loadedModels++;
                         modelLoadingState.currentModelProgress = 0;
+                        if (DEBUG_CLOUD_PRELOAD) console.log(`✅ [load-ready] ${name}`);
                         console.log(`✅ Model loaded: ${name}`);
                         setLoaderProgress(computeOverallProgress());
                         resolve(gltf);
@@ -1591,6 +1943,7 @@
                     },
                     (error) => {
                         console.warn(`⚠️ Failed to load model ${name}:`, error);
+                        if (DEBUG_CLOUD_PRELOAD) console.warn(`⚠️ [load-failed] ${name}`);
                         if (loaderModel) loaderModel.textContent = `Failed: ${name} (skipping)`;
 
                         modelLoadingState.loadedModels++;
@@ -1611,17 +1964,24 @@
                 startBtn.textContent = 'LOADING 0%';
             }
 
-            const [eiffelGltf, scooterGltf, building1, building2, building3] = await Promise.all([
+            const [eiffelGltf, scooterGltf, building1, building2, building3, tree1, tree2, tree3, tree4, mountain1] = await Promise.all([
                 loadModel('/3d-models/eiffel-tower.glb', 'Eiffel Tower'),
                 loadModel('/3d-models/scooter.glb', 'Scooter'),
                 loadModel('/3d-models/building1.glb', 'Building 1'),
                 loadModel('/3d-models/building2.glb', 'Building 2'),
-                loadModel('/3d-models/building3.glb', 'Building 3')
+                loadModel('/3d-models/building3.glb', 'Building 3'),
+                loadModel('/3d-models/tree1.glb', 'Tree 1'),
+                loadModel('/3d-models/tree2.glb', 'Tree 2'),
+                loadModel('/3d-models/tree3.glb', 'Tree 3'),
+                loadModel('/3d-models/tree4.glb', 'Tree 4'),
+                loadModel('/3d-models/mountain1.glb', 'Mountain 1')
             ]);
 
             loadedModels.eiffelTower = eiffelGltf;
             loadedModels.scooter = scooterGltf;
             loadedModels.buildings = [building1, building2, building3].filter(Boolean);
+            loadedModels.trees = [tree1, tree2, tree3, tree4].filter(Boolean);
+            loadedModels.mountains = [mountain1].filter(Boolean);
 
 
             modelLoadingState.ready = true;
@@ -1632,6 +1992,8 @@
                 startBtn.disabled = false;
             }
             console.log(`✅ Loaded ${loadedModels.buildings.length} building models`);
+            console.log(`✅ Loaded ${loadedModels.trees.length} tree models`);
+            console.log(`✅ Loaded ${loadedModels.mountains.length} mountain models`);
         }
 
 
@@ -1716,6 +2078,29 @@
             return { wrapper, box: finalBox, size: finalSize, scale };
         }
 
+        function ensureWorldGroups() {
+            if (!scene) return;
+
+            if (!groups.heroRoot) {
+                groups.heroRoot = new THREE.Group();
+                groups.heroRoot.name = 'heroGroup';
+                scene.add(groups.heroRoot);
+            }
+
+            if (!groups.bgRoot) {
+                groups.bgRoot = new THREE.Group();
+                groups.bgRoot.name = 'bgGroup';
+                groups.bgRoot.visible = false;
+                scene.add(groups.bgRoot);
+            }
+        }
+
+        function setBackgroundVisibility(visible) {
+            if (!groups.bgRoot) return;
+            groups.bgRoot.visible = !!visible;
+            bgRevealLocked = !visible;
+        }
+
 
         function makeProxyBuilding(size, baseMat) {
             const w = Math.max(10, size.x);
@@ -1739,8 +2124,8 @@
             const terrainGroup = new THREE.Group();
             terrainGroup.name = 'terrain';
 
-            const worldSize = 8000;
-            const segments = 128; // Higher = more detailed terrain
+            const worldSize = State.qualityTier === 'LOW' ? 4000 : 8000;
+            const segments = getQualitySettings().terrainSegments;
 
             // Create base terrain geometry with noise-like variation
             const terrainGeo = new THREE.PlaneGeometry(worldSize, worldSize, segments, segments);
@@ -1791,8 +2176,13 @@
                 (texture) => {
                     texture.wrapS = THREE.RepeatWrapping;
                     texture.wrapT = THREE.RepeatWrapping;
-                    texture.repeat.set(40, 40);
-                    texture.anisotropy = 16;
+                    texture.repeat.set(SCENE_CONFIG.grassRepeat, SCENE_CONFIG.grassRepeat);
+                    // Sharp at grazing angles — use max anisotropy the GPU supports
+                    const maxAniso = renderer?.capabilities?.getMaxAnisotropy?.() || 8;
+                    texture.anisotropy = Math.min(maxAniso, getQualitySettings().grassAnisotropy || 8);
+                    texture.minFilter = THREE.LinearMipmapLinearFilter;
+                    texture.magFilter = THREE.LinearFilter;
+                    texture.generateMipmaps = true;
                     grassMaterial.map = texture;
                     grassMaterial.needsUpdate = true;
                     console.log('✅ Grass texture loaded');
@@ -1807,6 +2197,7 @@
             terrain.receiveShadow = true;
             terrain.name = 'grassTerrain';
             terrainGroup.add(terrain);
+            grassTerrainMesh = terrain;
 
             // Create River
             createRiver(terrainGroup);
@@ -1814,7 +2205,8 @@
             // Create dirt paths/roads
             createPaths(terrainGroup);
 
-            scene.add(terrainGroup);
+            ensureWorldGroups();
+            groups.heroRoot.add(terrainGroup);
             groups.terrain = terrainGroup;
 
             console.log('✅ Realistic terrain created with grass and river');
@@ -1827,17 +2219,21 @@
 
             const riverWidth = 180;
             const riverLength = 6000;
+            const riverExtent = State.qualityTier === 'LOW' ? 1500 : 2500;
             const riverCurve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-2500, -2, 800),
-                new THREE.Vector3(-1000, -3, 400),
+                new THREE.Vector3(-riverExtent, -2, 800 * (riverExtent / 2500)),
+                new THREE.Vector3(-riverExtent * 0.4, -3, 400 * (riverExtent / 2500)),
                 new THREE.Vector3(0, -4, 0),
-                new THREE.Vector3(1000, -3, -400),
-                new THREE.Vector3(2500, -2, -800)
+                new THREE.Vector3(riverExtent * 0.4, -3, -400 * (riverExtent / 2500)),
+                new THREE.Vector3(riverExtent, -2, -800 * (riverExtent / 2500))
             ]);
+            sceneCurves.river = riverCurve;
+            sceneCurves.riverHalfWidth = riverWidth * 0.5;
 
             // Create river geometry from curve
-            const riverSegments = 100;
-            const riverGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2, 8, false);
+            const qualityRiver = getQualitySettings();
+            const riverSegments = qualityRiver.riverSegments;
+            const riverGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2, qualityRiver.riverRadialSegments, false);
 
             // Flatten the tube to make it look like a river
             const positions = riverGeo.attributes.position;
@@ -1854,7 +2250,7 @@
             parentGroup.add(river);
 
             // Add river banks (slightly elevated dirt)
-            const bankGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2 + 15, 8, false);
+            const bankGeo = new THREE.TubeGeometry(riverCurve, riverSegments, riverWidth / 2 + 15, qualityRiver.riverRadialSegments, false);
             const bankPositions = bankGeo.attributes.position;
             for (let i = 0; i < bankPositions.count; i++) {
                 const y = bankPositions.getY(i);
@@ -1881,8 +2277,9 @@
                 new THREE.Vector3(0, 0.5, 0),
                 new THREE.Vector3(0, 0.5, -200)
             ]);
+            sceneCurves.mainPath = pathCurve;
 
-            const pathGeo = new THREE.TubeGeometry(pathCurve, 50, 25, 8, false);
+            const pathGeo = new THREE.TubeGeometry(pathCurve, getQualitySettings().pathSegments, 25, 4, false);
 
             // Flatten path
             const positions = pathGeo.attributes.position;
@@ -1899,6 +2296,475 @@
             console.log('✅ Paths created');
         }
 
+        function getGroundY(x, z, fallbackY = 0) {
+            if (!grassTerrainMesh) return fallbackY;
+            _groundRayOrigin.set(x, 2000, z);
+            _groundHits.length = 0;
+            _groundRaycaster.near = 0;
+            _groundRaycaster.far = 5000;
+            _groundRaycaster.set(_groundRayOrigin, _groundRayDir);
+            _groundRaycaster.intersectObject(grassTerrainMesh, false, _groundHits);
+            if (_groundHits.length > 0) return _groundHits[0].point.y;
+            return fallbackY;
+        }
+
+        function sampleCurve2D(curve, sampleCount = 160) {
+            const points = [];
+            if (!curve) return points;
+            for (let i = 0; i <= sampleCount; i++) {
+                const p = curve.getPointAt(i / sampleCount);
+                points.push({ x: p.x, z: p.z });
+            }
+            return points;
+        }
+
+        function distSqToSegment2D(px, pz, ax, az, bx, bz) {
+            const abx = bx - ax;
+            const abz = bz - az;
+            const apx = px - ax;
+            const apz = pz - az;
+            const abLenSq = abx * abx + abz * abz || 1;
+            const t = THREE.MathUtils.clamp((apx * abx + apz * abz) / abLenSq, 0, 1);
+            const qx = ax + abx * t;
+            const qz = az + abz * t;
+            const dx = px - qx;
+            const dz = pz - qz;
+            return dx * dx + dz * dz;
+        }
+
+        function minDistanceSqToPolyline2D(x, z, points) {
+            if (!points || points.length < 2) return Infinity;
+            let best = Infinity;
+            for (let i = 0; i < points.length - 1; i++) {
+                const a = points[i];
+                const b = points[i + 1];
+                const d2 = distSqToSegment2D(x, z, a.x, a.z, b.x, b.z);
+                if (d2 < best) best = d2;
+            }
+            return best;
+        }
+
+        function createHeroForegroundSet() {
+            ensureWorldGroups();
+            if (!groups.heroRoot) return null;
+
+            if (groups.heroForeground && groups.heroForeground.parent) {
+                groups.heroForeground.parent.remove(groups.heroForeground);
+            }
+
+            const heroForeground = new THREE.Group();
+            heroForeground.name = 'heroForeground';
+            // Keep HOME foreground minimal and clean: avoid near placeholder-like buildings.
+
+            const treeAnchors = [
+                { x: -90, z: 220, scale: 1.05 },
+                { x: 110, z: 180, scale: 0.92 },
+                { x: -160, z: 70, scale: 0.86 },
+                { x: 170, z: 40, scale: 0.78 }
+            ];
+
+            if (loadedModels.trees && loadedModels.trees.length > 0) {
+                for (let i = 0; i < treeAnchors.length; i++) {
+                    const anchor = treeAnchors[i];
+                    const src = loadedModels.trees[i % loadedModels.trees.length];
+                    if (!src?.scene) continue;
+
+                    const clone = src.scene.clone(true);
+                    improveTextureFiltering(clone);
+                    const normalized = normalizeToBaseline(clone, {
+                        targetHeight: 18,
+                        clampMin: 0.05,
+                        clampMax: 20,
+                        minHeightBoost: 1.08
+                    });
+                    normalized.wrapper.scale.multiplyScalar(anchor.scale);
+                    normalized.wrapper.position.set(anchor.x, getGroundY(anchor.x, anchor.z, 0), anchor.z);
+                    normalized.wrapper.rotation.y = Math.random() * Math.PI * 2;
+                    heroForeground.add(normalized.wrapper);
+                }
+            }
+
+            groups.heroForeground = heroForeground;
+            groups.heroRoot.add(heroForeground);
+            return heroForeground;
+        }
+
+        function createTrees() {
+            console.log('🌳 Building trees (streamed clusters + river + boulevard)...');
+
+            if (groups.trees && groups.trees.parent) {
+                groups.trees.parent.remove(groups.trees);
+            }
+
+            treeLods.length = 0;
+            treeZones.length = 0;
+            treeProxyZones.length = 0;
+            treeColliders.length = 0;
+
+            const treeGroup = new THREE.Group();
+            treeGroup.name = 'trees';
+            groups.trees = treeGroup;
+
+            const quality = getQualitySettings();
+            const bands = getStreamingBands('tree');
+            const totalTarget = quality.treeCount || 160;
+            const streamedTarget = Math.min(totalTarget, Math.max(20, quality.treeLodCount || totalTarget));
+            const rand = makeLayoutRng(_baseTreeSeed);
+
+            if (grassTerrainMesh) grassTerrainMesh.updateMatrixWorld(true);
+
+            const pathSamples = sampleCurve2D(sceneCurves.mainPath, 180);
+            const riverSamples = sampleCurve2D(sceneCurves.river, 220);
+            const pathHalfWidth = 25;
+            const riverHalfWidth = Math.max(82, sceneCurves.riverHalfWidth || 90);
+            const riverSafeClearance = riverHalfWidth + 16;
+
+            const templates = [];
+            if (loadedModels.trees && loadedModels.trees.length > 0) {
+                for (let i = 0; i < loadedModels.trees.length; i++) {
+                    const gltf = loadedModels.trees[i];
+                    if (!gltf || !gltf.scene) continue;
+
+                    const raw = gltf.scene.clone(true);
+                    improveTextureFiltering(raw);
+                    raw.traverse((child) => {
+                        if (!child.isMesh) return;
+                        child.castShadow = false;
+                        child.receiveShadow = true;
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach((m) => {
+                            if (!m) return;
+                            if (m.metalness !== undefined) m.metalness = Math.min(m.metalness, 0.12);
+                            if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, 0.6);
+                            m.fog = true;
+                            m.needsUpdate = true;
+                        });
+                    });
+
+                    const targetHeight = 18 + i * 3;
+                    const normalized = normalizeToBaseline(raw, {
+                        targetHeight,
+                        clampMin: 0.05,
+                        clampMax: 24,
+                        minHeightBoost: 1.08
+                    });
+                    templates.push({ hi: normalized.wrapper, size: normalized.size });
+                }
+            }
+            if (templates.length === 0) {
+                console.warn('⚠️ Tree GLBs unavailable. Using proxy-only tree streaming.');
+            }
+
+            const proxyTrunkGeo = new THREE.CylinderGeometry(0.45, 0.68, 8, 7);
+            const proxyLeafGeo = new THREE.ConeGeometry(5.2, 12.8, 8);
+            const proxySilGeo = new THREE.ConeGeometry(5.4, 13.2, 6);
+
+            const proxyTrunkMat = new THREE.MeshStandardMaterial({
+                color: 0x5d442a,
+                roughness: 0.95,
+                metalness: 0.0,
+                fog: true
+            });
+            const proxyLeafMat = new THREE.MeshStandardMaterial({
+                color: 0x3f6f3a,
+                roughness: 0.94,
+                metalness: 0.0,
+                fog: true
+            });
+            const treeSilhouetteMat = new THREE.MeshBasicMaterial({
+                color: 0x2f4630,
+                fog: true
+            });
+
+            function makeTreeProxyNode(scaleFactor = 1) {
+                const proxy = new THREE.Group();
+                const trunk = new THREE.Mesh(proxyTrunkGeo, proxyTrunkMat);
+                const crown = new THREE.Mesh(proxyLeafGeo, proxyLeafMat);
+                trunk.position.y = 4;
+                crown.position.y = 14;
+                trunk.castShadow = false;
+                crown.castShadow = false;
+                trunk.receiveShadow = true;
+                crown.receiveShadow = true;
+                proxy.add(trunk);
+                proxy.add(crown);
+                proxy.scale.setScalar(scaleFactor);
+                return proxy;
+            }
+
+            function makeTreeSilhouetteNode(scaleFactor = 1) {
+                const silhouette = new THREE.Group();
+                const body = new THREE.Mesh(proxySilGeo, treeSilhouetteMat);
+                body.position.y = 7;
+                body.scale.set(0.95, 1.12, 0.95);
+                silhouette.add(body);
+                silhouette.scale.setScalar(scaleFactor);
+                return silhouette;
+            }
+
+            function intersectsCircles(x, z, r, circles, extraPad = 0) {
+                for (let i = 0; i < circles.length; i++) {
+                    const c = circles[i];
+                    const dx = x - c.x;
+                    const dz = z - c.z;
+                    const rr = r + c.r + extraPad;
+                    if (dx * dx + dz * dz < rr * rr) return true;
+                }
+                return false;
+            }
+
+            function isTreeSpotValid(x, z, r, opts = {}) {
+                const worldLimit = State.qualityTier === 'LOW' ? 1900 : 3900;
+                if (Math.abs(x) > worldLimit || Math.abs(z) > worldLimit) return false;
+
+                const dxE = x - EIFFEL_XZ.x;
+                const dzE = z - EIFFEL_XZ.y;
+                const keepOut = EIFFEL_KEEP_OUT_R + 36 + r;
+                if (dxE * dxE + dzE * dzE < keepOut * keepOut) return false;
+
+                if (intersectsCircles(x, z, r, cityColliders, 2)) return false;
+                if (intersectsCircles(x, z, r, treeColliders, 5)) return false;
+
+                if (opts.avoidPath !== false && pathSamples.length > 1) {
+                    const pathD2 = minDistanceSqToPolyline2D(x, z, pathSamples);
+                    const minPath = pathHalfWidth + 8 + r;
+                    if (pathD2 < minPath * minPath) return false;
+                }
+
+                if (riverSamples.length > 1) {
+                    const riverD2 = minDistanceSqToPolyline2D(x, z, riverSamples);
+                    const minRiver = (opts.riverClearance !== undefined ? opts.riverClearance : riverSafeClearance) + r;
+                    if (riverD2 < minRiver * minRiver) return false;
+                }
+
+                return true;
+            }
+
+            const placements = [];
+            function addPlacement(x, z, r, zone) {
+                const y = getGroundY(x, z, 0);
+                const placement = {
+                    x,
+                    y,
+                    z,
+                    r,
+                    zone,
+                    rotation: rand() * Math.PI * 2,
+                    scale: 0.88 + rand() * 0.3,
+                    templateIndex: templates.length ? Math.floor(rand() * templates.length) : -1
+                };
+                placements.push(placement);
+                treeColliders.push({ x, z, r });
+                return placement;
+            }
+
+            function addCluster(centerX, centerZ, count, spread, zone, opts = {}) {
+                for (let i = 0; i < count && placements.length < totalTarget; i++) {
+                    const angle = rand() * Math.PI * 2;
+                    const radial = spread * (0.28 + rand() * 0.92);
+                    const x = centerX + Math.cos(angle) * radial + (rand() - 0.5) * 5;
+                    const z = centerZ + Math.sin(angle) * radial + (rand() - 0.5) * 5;
+                    const r = 6 + rand() * 3.8;
+                    if (isTreeSpotValid(x, z, r, opts)) addPlacement(x, z, r, zone);
+                }
+            }
+
+            const clusterMin = DENSITY_TUNING.treeClusterMin;
+            const clusterMax = DENSITY_TUNING.treeClusterMax;
+
+            // A) Boulevard clusters
+            if (sceneCurves.mainPath) {
+                const len = sceneCurves.mainPath.getLength();
+                let walk = 35;
+                while (walk < len - 24 && placements.length < totalTarget) {
+                    const t = walk / len;
+                    const p = sceneCurves.mainPath.getPointAt(t);
+                    const tangent = sceneCurves.mainPath.getTangentAt(t);
+                    const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                    const sideOffset = 35 + rand() * 20;
+                    const jitter = (rand() - 0.5) * 12;
+                    const firstSign = rand() > 0.5 ? 1 : -1;
+                    const clusterSize = clusterMin + Math.floor(rand() * (clusterMax - clusterMin + 1));
+
+                    const xA = p.x + side.x * sideOffset * firstSign + jitter;
+                    const zA = p.z + side.z * sideOffset * firstSign + jitter;
+                    addCluster(xA, zA, clusterSize, 20 + rand() * 8, 'boulevard', { avoidPath: false, riverClearance: riverSafeClearance });
+
+                    const xB = p.x - side.x * sideOffset * firstSign - jitter;
+                    const zB = p.z - side.z * sideOffset * firstSign - jitter;
+                    addCluster(xB, zB, Math.max(3, clusterSize - 1), 18 + rand() * 7, 'boulevard', { avoidPath: false, riverClearance: riverSafeClearance });
+
+                    walk += 58 + rand() * 22;
+                }
+            }
+
+            // B) River bank clusters
+            if (sceneCurves.river) {
+                const len = sceneCurves.river.getLength();
+                let walk = 42;
+                let sideSwitch = 1;
+                while (walk < len - 30 && placements.length < totalTarget) {
+                    const t = walk / len;
+                    const p = sceneCurves.river.getPointAt(t);
+                    const tangent = sceneCurves.river.getTangentAt(t);
+                    const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                    sideSwitch *= -1;
+                    const sign = rand() > 0.45 ? sideSwitch : -sideSwitch;
+                    const offset = riverHalfWidth + 34 + rand() * 34;
+                    const cx = p.x + side.x * offset * sign;
+                    const cz = p.z + side.z * offset * sign;
+                    const clusterSize = 3 + Math.floor(rand() * 4);
+                    addCluster(cx, cz, clusterSize, 19 + rand() * 10, 'river', { avoidPath: true, riverClearance: riverSafeClearance });
+                    walk += 130 + rand() * 60;
+                }
+            }
+
+            // C) Block/perimeter clusters around city and park patches
+            const targetClusters = DENSITY_TUNING.treeClusterCount[State.qualityTier] || 20;
+            for (let c = 0; c < targetClusters && placements.length < totalTarget; c++) {
+                let cx;
+                let cz;
+                if (cityColliders.length > 0 && rand() < 0.75) {
+                    const b = cityColliders[Math.floor(rand() * cityColliders.length)];
+                    const a = rand() * Math.PI * 2;
+                    const d = b.r + 22 + rand() * 80;
+                    cx = b.x + Math.cos(a) * d;
+                    cz = b.z + Math.sin(a) * d;
+                } else {
+                    const ringR = (State.isMobile ? 760 : 980) + rand() * (State.isMobile ? 420 : 960);
+                    const a = rand() * Math.PI * 2;
+                    cx = Math.cos(a) * ringR;
+                    cz = -520 + Math.sin(a) * ringR;
+                }
+                const clusterSize = clusterMin + Math.floor(rand() * (clusterMax - clusterMin + 1));
+                addCluster(cx, cz, clusterSize, 24 + rand() * 10, 'block', { avoidPath: true, riverClearance: riverSafeClearance + 4 });
+            }
+
+            // Deterministic recovery to guarantee tier budgets.
+            let safetyPass = 0;
+            while (placements.length < totalTarget && safetyPass < totalTarget * 90) {
+                safetyPass++;
+                const a = rand() * Math.PI * 2;
+                const d = (State.isMobile ? 800 : 1020) + rand() * (State.isMobile ? 520 : 1180);
+                const x = Math.cos(a) * d;
+                const z = -520 + Math.sin(a) * d;
+                const r = 6 + rand() * 3.2;
+                if (isTreeSpotValid(x, z, r, { avoidPath: true, riverClearance: riverSafeClearance + 4 })) {
+                    addPlacement(x, z, r, 'recovery');
+                }
+            }
+
+            const streamedPlacements = placements.slice(0, streamedTarget);
+            const instancedPlacements = placements.slice(streamedPlacements.length);
+
+            for (let i = 0; i < streamedPlacements.length; i++) {
+                const p = streamedPlacements[i];
+
+                let hiNode;
+                if (templates.length > 0) {
+                    const template = templates[p.templateIndex % templates.length];
+                    hiNode = template.hi.clone(true);
+                    hiNode.scale.multiplyScalar(p.scale);
+                    hiNode.updateMatrixWorld(true);
+                    const hiBox = getTightMeshBox(hiNode);
+                    hiNode.position.y += -hiBox.min.y;
+                    hiNode.updateMatrixWorld(true);
+                } else {
+                    hiNode = makeTreeProxyNode(p.scale);
+                }
+
+                const proxyNode = makeTreeProxyNode(p.scale * 0.96);
+                const silhouetteNode = makeTreeSilhouetteNode(p.scale * 0.96);
+                const stream = buildStreamObject('tree', hiNode, proxyNode, silhouetteNode, rand);
+                stream.position.set(p.x, p.y, p.z);
+                stream.rotation.y = p.rotation;
+
+                treeGroup.add(stream);
+                treeLods.push(stream);
+            }
+
+            // Keep a cheap instanced fallback for distant vegetation mass.
+            if (instancedPlacements.length > 0) {
+                const zoneSize = bands.zoneSize;
+                const zoneMap = new Map();
+                for (let i = 0; i < instancedPlacements.length; i++) {
+                    const p = instancedPlacements[i];
+                    const kx = Math.floor(p.x / zoneSize);
+                    const kz = Math.floor(p.z / zoneSize);
+                    const key = `${kx},${kz}`;
+                    if (!zoneMap.has(key)) {
+                        zoneMap.set(key, {
+                            items: [],
+                            center: new THREE.Vector3((kx + 0.5) * zoneSize, 35, (kz + 0.5) * zoneSize),
+                            radius: zoneSize * 0.92
+                        });
+                    }
+                    zoneMap.get(key).items.push(p);
+                }
+
+                const tmpPos = new THREE.Vector3();
+                const tmpScale = new THREE.Vector3();
+                const tmpQuat = new THREE.Quaternion();
+                const tmpMat = new THREE.Matrix4();
+                const up = new THREE.Vector3(0, 1, 0);
+
+                zoneMap.forEach((zone) => {
+                    const count = zone.items.length;
+                    const zoneGroup = new THREE.Group();
+                    zoneGroup.name = 'treeProxyZone';
+
+                    const trunkInst = new THREE.InstancedMesh(proxyTrunkGeo, proxyTrunkMat, count);
+                    const crownInst = new THREE.InstancedMesh(proxyLeafGeo, proxyLeafMat, count);
+                    trunkInst.frustumCulled = true;
+                    crownInst.frustumCulled = true;
+
+                    for (let i = 0; i < count; i++) {
+                        const p = zone.items[i];
+                        tmpQuat.setFromAxisAngle(up, p.rotation);
+                        tmpScale.set(p.scale, p.scale, p.scale);
+
+                        tmpPos.set(p.x, p.y + 4 * p.scale, p.z);
+                        tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+                        trunkInst.setMatrixAt(i, tmpMat);
+
+                        tmpPos.set(p.x, p.y + 14 * p.scale, p.z);
+                        tmpMat.compose(tmpPos, tmpQuat, tmpScale);
+                        crownInst.setMatrixAt(i, tmpMat);
+                    }
+
+                    trunkInst.instanceMatrix.needsUpdate = true;
+                    crownInst.instanceMatrix.needsUpdate = true;
+                    trunkInst.computeBoundingSphere();
+                    crownInst.computeBoundingSphere();
+
+                    zoneGroup.add(trunkInst);
+                    zoneGroup.add(crownInst);
+                    zoneGroup.visible = false;
+                    treeGroup.add(zoneGroup);
+
+                    treeProxyZones.push({
+                        group: zoneGroup,
+                        center: zone.center,
+                        radius: zone.radius,
+                        farStart: bands.farStart
+                    });
+                });
+            }
+
+            const zones = buildStreamZonesFromItems(treeLods, bands.zoneSize, 38);
+            treeZones.length = 0;
+            for (let i = 0; i < zones.length; i++) treeZones.push(zones[i]);
+
+            treePlacedCount = placements.length;
+            ensureWorldGroups();
+            groups.bgRoot.add(treeGroup);
+            console.log(`🌳 Trees built: ${treePlacedCount} (tier=${State.qualityTier})`);
+            if (DEBUG_STREAMING) {
+                console.log(`🧪 Trees debug | streamed=${streamedPlacements.length} instanced=${instancedPlacements.length}`);
+            }
+            return treeGroup;
+        }
+
 
         // -------------------------
         // City Generation (FIX #1 + FIX #2)
@@ -1910,7 +2776,58 @@
         const EIFFEL_KEEP_OUT_R = 260; // adjust if needed
 
         const cityInstances = [];
+        const cityLods = []; // Direct LOD array — avoids traverse() every frame
+        const cityZones = []; // Spatial zones for coarse frustum culling
         const cityColliders = []; // { x, z, r }
+
+        // ---- Seeded PRNG for deterministic city/tree layout ----
+        function hashStringToSeed(str) {
+            let h = 2166136261 >>> 0; // FNV-1a
+            for (let i = 0; i < str.length; i++) {
+                h ^= str.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            }
+            return h >>> 0;
+        }
+
+        function makeRng(seed) {
+            let s = seed >>> 0;
+            return function () {
+                s = (s + 0x6D2B79F5) >>> 0;
+                let t = Math.imul(s ^ (s >>> 15), 1 | s);
+                t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function resolveLayoutSeed() {
+            const seedParam = URL_PARAMS.get('seed');
+            if (!seedParam) return hashStringToSeed(DEFAULT_LAYOUT_SEED_LABEL);
+            const asInt = Number.parseInt(seedParam, 10);
+            if (Number.isFinite(asInt)) return asInt >>> 0;
+            return hashStringToSeed(seedParam);
+        }
+
+        const _layoutSeed = resolveLayoutSeed();
+        const _baseCitySeed = hashStringToSeed('city-layout');
+        const _baseTreeSeed = hashStringToSeed('tree-layout');
+
+        function makeLayoutRng(labelSeed) {
+            return makeRng((_layoutSeed ^ labelSeed) >>> 0);
+        }
+
+        if (DEBUG_STREAMING) {
+            console.log(`🧪 Debug mode enabled | seed=${_layoutSeed} | tier=${State.qualityTier}`);
+        }
+
+        // ---- Far Silhouette Material (LOD2) ----
+        // Opaque, solid, ultra-cheap box placeholder — like "unloaded" game buildings.
+        // Single shared MeshBasicMaterial: no PBR cost, fog handles atmospheric fade.
+        const _silhouetteMaterial = new THREE.MeshBasicMaterial({
+            color: 0x596274,   // cooler/darker massing for distant skyline readability
+            fog: true          // fog provides natural distance fade, NOT transparency
+        });
+
         function circleIntersectsAny(x, z, r) {
             // Keep-out around Eiffel
             const dxE = x - EIFFEL_XZ.x;
@@ -1932,9 +2849,12 @@
         }
 
         function createCity() {
-            console.log('🏙️ Building City (blocks + Eiffel keep-out + better spacing)...');
+            console.log('🏙️ Building city with streamed stages + starter density...');
+            const rand = makeLayoutRng(_baseCitySeed);
 
             cityInstances.length = 0;
+            cityLods.length = 0;
+            cityZones.length = 0;
             cityColliders.length = 0;
 
             cityGroup = new THREE.Group();
@@ -1942,190 +2862,324 @@
             groups.city = cityGroup;
 
             const hasRealBuildings = loadedModels.buildings && loadedModels.buildings.length > 0;
+            const quality = getQualitySettings();
+            const bands = getStreamingBands('city');
+            const baseCount = quality.buildingCount;
 
-            // ---- Templates
             const templates = [];
             if (hasRealBuildings) {
-                for (const gltf of loadedModels.buildings) {
+                for (let i = 0; i < loadedModels.buildings.length; i++) {
+                    const gltf = loadedModels.buildings[i];
                     if (!gltf || !gltf.scene) continue;
-
-                    // ✅ this is the building model
                     const raw = gltf.scene.clone(true);
-
-                    // Optional but recommended (reduces shimmer)
                     improveTextureFiltering(raw);
 
                     raw.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = false;
-                            child.receiveShadow = false;
-                            if (child.material) child.material.envMapIntensity = 1.0;
-                        }
+                        if (!child.isMesh) return;
+                        child.castShadow = false;
+                        child.receiveShadow = false;
+                        if (child.material) child.material.envMapIntensity = 1.35;
                     });
 
-                    // Slightly taller baseline so they read like real buildings
                     const normalized = normalizeToBaseline(raw, { targetHeight: 165 });
                     templates.push({ hi: normalized.wrapper, size: normalized.size });
                 }
-
-
             }
 
             const useFallback = templates.length === 0;
-            const quality = getQualitySettings();
-            const instances = quality.buildingCount;
-
             const proxyBaseMat = MATERIALS.limestone.clone();
 
-            function makeLODFromTemplate(t, scalar) {
-                const quality = getQualitySettings();
-
-                const hi = t.hi.clone(true);
-                hi.scale.multiplyScalar(scalar);
-                hi.updateMatrixWorld(true);
-
-                // Ground it
-                const b = new THREE.Box3().setFromObject(hi);
-                hi.position.y += -b.min.y;
-                hi.updateMatrixWorld(true);
-
-                const finalBox = new THREE.Box3().setFromObject(hi);
-                const finalSize = finalBox.getSize(new THREE.Vector3());
-
-                const proxyMat = MATERIALS.limestone.clone();
-                proxyMat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.10);
-
-                const proxy = makeProxyBuilding(finalSize, proxyMat);
-
-                const lod = new THREE.LOD();
-                lod.addLevel(hi, 0);
-
-                // ✅ proxy only FAR away (never near camera)
-                lod.addLevel(proxy, quality.maxLodDistance * 1.6);
-                return lod;
+            function inSightCorridor(x, z, r) {
+                if (Math.abs(x) < 90 + r && z > -250 && z < 250) return true;
+                if (Math.abs(x) < 70 + r && z > -420 && z < -120) return true;
+                return false;
             }
 
+            function canPlace(x, z, r) {
+                if (inSightCorridor(x, z, r)) return false;
+                return !circleIntersectsAny(x, z, r);
+            }
 
+            function makeFallbackHi(size, randFn) {
+                const w = Math.max(20, size?.x || (26 + randFn() * 30));
+                const h = Math.max(70, size?.y || (80 + randFn() * 170));
+                const d = Math.max(20, size?.z || (20 + randFn() * 26));
+                const mat = proxyBaseMat.clone();
+                mat.color.offsetHSL(0, 0, (randFn() - 0.5) * 0.1);
+                const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+                m.position.y = h * 0.5;
+                m.receiveShadow = true;
+                return m;
+            }
 
-            // ---- Layout (IMPORTANT: move city away from Eiffel + away from camera corridor)
+            function makeCityStream(template, scalar) {
+                let hiNode;
+                let finalSize;
+
+                if (template) {
+                    hiNode = template.hi.clone(true);
+                    hiNode.scale.multiplyScalar(scalar);
+                    hiNode.updateMatrixWorld(true);
+                    const hiBox = getTightMeshBox(hiNode);
+                    hiNode.position.y += -hiBox.min.y;
+                    hiNode.updateMatrixWorld(true);
+                    finalSize = getTightMeshBox(hiNode).getSize(new THREE.Vector3());
+                } else {
+                    hiNode = makeFallbackHi(null, rand);
+                    finalSize = new THREE.Vector3(34 + rand() * 20, 110 + rand() * 120, 28 + rand() * 20);
+                }
+
+                const proxyMat = MATERIALS.limestone.clone();
+                proxyMat.color.offsetHSL(0, 0, (rand() - 0.5) * 0.08);
+                const proxyNode = makeProxyBuilding(finalSize, proxyMat);
+
+                const silW = Math.max(12, finalSize.x * 0.95);
+                const silH = Math.max(24, finalSize.y * 0.95);
+                const silD = Math.max(12, finalSize.z * 0.95);
+                const silhouetteNode = new THREE.Mesh(new THREE.BoxGeometry(silW, silH, silD), _silhouetteMaterial);
+                silhouetteNode.position.y = silH * 0.5;
+                silhouetteNode.castShadow = false;
+                silhouetteNode.receiveShadow = false;
+
+                return buildStreamObject('city', hiNode, proxyNode, silhouetteNode, rand);
+            }
+
+            function footprintRadiusFromTemplate(template, scalar) {
+                if (!template) {
+                    const baseR = State.isMobile ? 32 : 40;
+                    return baseR * scalar + rand() * 10;
+                }
+                const footprint = Math.max(template.size.x, template.size.z) * 0.55;
+                return footprint * scalar;
+            }
+
+            function placeAt(x, z, scalar, baseRot, template) {
+                const r = footprintRadiusFromTemplate(template, scalar);
+                if (!canPlace(x, z, r)) return false;
+
+                const stream = makeCityStream(template, scalar);
+                stream.position.set(x, 0, z);
+                stream.rotation.y = baseRot + (rand() - 0.5) * 0.16;
+                stream.userData.colliderR = r;
+
+                cityGroup.add(stream);
+                cityInstances.push(stream);
+                cityLods.push(stream);
+                addCollider(x, z, r);
+                return true;
+            }
+
+            // Grid base
             const originX = 0;
-            const originZ = -650; // was ~-320; this is a huge improvement
-
+            const originZ = -650;
             const blocksX = State.isMobile ? 4 : 6;
             const blocksZ = State.isMobile ? 3 : 5;
-
             const blockSize = State.isMobile ? 180 : 210;
             const street = State.isMobile ? 70 : 85;
+            const halfSpanX = ((blocksX - 1) * (blockSize + street)) * 0.5;
+            const halfSpanZ = ((blocksZ - 1) * (blockSize + street)) * 0.5;
+            const perBlock = Math.ceil(baseCount / (blocksX * blocksZ));
 
-            const halfSpanX = ((blocksX - 1) * (blockSize + street)) / 2;
-            const halfSpanZ = ((blocksZ - 1) * (blockSize + street)) / 2;
-
-            const perBlock = Math.ceil(instances / (blocksX * blocksZ));
             let placed = 0;
-
-            for (let bz = 0; bz < blocksZ && placed < instances; bz++) {
-                for (let bx = 0; bx < blocksX && placed < instances; bx++) {
+            for (let bz = 0; bz < blocksZ && placed < baseCount; bz++) {
+                for (let bx = 0; bx < blocksX && placed < baseCount; bx++) {
                     const cx = originX + (bx * (blockSize + street) - halfSpanX);
                     const cz = originZ + (bz * (blockSize + street) - halfSpanZ);
+                    const half = blockSize * 0.5;
 
-                    const half = blockSize / 2;
+                    for (let k = 0; k < perBlock && placed < baseCount; k++) {
+                        const edge = Math.floor(rand() * 4);
+                        const scalar = 0.88 + rand() * 0.36;
+                        const chosenTemplate = useFallback ? null : templates[Math.floor(rand() * templates.length)];
 
-                    for (let k = 0; k < perBlock && placed < instances; k++) {
-                        const edge = Math.floor(Math.random() * 4);
-                        const scalar = 0.90 + Math.random() * 0.35;
-
-                        // Use real footprint radius (prevents overlap properly)
-                        let r;
-                        if (!useFallback) {
-                            const t = templates[Math.floor(Math.random() * templates.length)];
-                            // footprint based on model size (x/z)
-                            const footprint = Math.max(t.size.x, t.size.z) * 0.55;
-                            r = footprint * scalar;
-                        } else {
-                            const baseR = State.isMobile ? 32 : 40;
-                            r = baseR * scalar + (Math.random() * 10);
-                        }
-
-
-                        let x, z, rotY;
-                        const jitter = (Math.random() - 0.5) * 22;
+                        let x;
+                        let z;
+                        let rotY;
+                        const jitter = (rand() - 0.5) * 22;
 
                         if (edge === 0) {
-                            x = cx + (Math.random() * blockSize - half);
+                            x = cx + (rand() * blockSize - half);
                             z = cz - half - (street * 0.35) + jitter;
                             rotY = Math.PI;
                         } else if (edge === 1) {
-                            x = cx + (Math.random() * blockSize - half);
+                            x = cx + (rand() * blockSize - half);
                             z = cz + half + (street * 0.35) + jitter;
                             rotY = 0;
                         } else if (edge === 2) {
                             x = cx - half - (street * 0.35) + jitter;
-                            z = cz + (Math.random() * blockSize - half);
-                            rotY = Math.PI / 2;
+                            z = cz + (rand() * blockSize - half);
+                            rotY = Math.PI * 0.5;
                         } else {
                             x = cx + half + (street * 0.35) + jitter;
-                            z = cz + (Math.random() * blockSize - half);
-                            rotY = -Math.PI / 2;
+                            z = cz + (rand() * blockSize - half);
+                            rotY = -Math.PI * 0.5;
                         }
 
-                        // collision attempts
                         let ok = false;
                         for (let attempt = 0; attempt < 24; attempt++) {
-                            const ax = x + (Math.random() - 0.5) * 30;
-                            const az = z + (Math.random() - 0.5) * 30;
-
-                            if (!circleIntersectsAny(ax, az, r)) {
-                                x = ax; z = az;
+                            const ax = x + (rand() - 0.5) * 30;
+                            const az = z + (rand() - 0.5) * 30;
+                            const r = footprintRadiusFromTemplate(chosenTemplate, scalar);
+                            if (canPlace(ax, az, r)) {
+                                x = ax;
+                                z = az;
                                 ok = true;
                                 break;
                             }
                         }
                         if (!ok) continue;
-
-                        let obj;
-                        if (useFallback) {
-                            const w = 26 + Math.random() * 30;
-                            const h = 80 + Math.random() * 170;
-                            const d = 20 + Math.random() * 26;
-
-                            const mat = proxyBaseMat.clone();
-                            mat.color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.12);
-
-                            obj = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-                            obj.position.y = h / 2;
-                            obj.receiveShadow = true;
-                        } else {
-                            // Reuse the same template that was used for radius calculation (if it exists)
-                            const t2 = (typeof t !== 'undefined' && t) ? t : templates[Math.floor(Math.random() * templates.length)];
-                            obj = makeLODFromTemplate(t2, scalar);
-
-                        }
-
-                        obj.position.set(x, 0, z);
-                        obj.rotation.y = rotY + (Math.random() - 0.5) * 0.18;
-
-                        cityGroup.add(obj);
-                        cityInstances.push(obj);
-                        addCollider(x, z, r);
-
+                        if (!placeAt(x, z, scalar, rotY, chosenTemplate)) continue;
                         placed++;
                     }
                 }
             }
 
-            // extra safety pass
-            pushApart(cityInstances, State.isMobile ? 95 : 130, 5);
+            // Left expansion (fills side volume from camera sweeps)
+            if (!useFallback && !State.isMobile) {
+                const leftExtra = State.qualityTier === 'HIGH' ? 20 : State.qualityTier === 'MEDIUM' ? 12 : 5;
+                const leftOriginX = -halfSpanX - (blockSize + street) * 0.9;
+                const leftSpanZ = halfSpanZ * 2.2;
 
+                for (let k = 0; k < leftExtra * 3; k++) {
+                    const t2 = templates[Math.floor(rand() * templates.length)];
+                    const scalar = 0.84 + rand() * 0.34;
+                    const stripWidth = blockSize * 1.45;
+                    let x = leftOriginX - rand() * stripWidth;
+                    let z = originZ + (rand() - 0.3) * leftSpanZ;
 
-            scene.add(cityGroup);
-            // Enable automatic frustum culling for all city objects
-            cityGroup.traverse((child) => {
-                if (child.isMesh || child.isLOD) {
-                    child.frustumCulled = true;
+                    let ok = false;
+                    for (let attempt = 0; attempt < 20; attempt++) {
+                        const ax = x + (rand() - 0.5) * 38;
+                        const az = z + (rand() - 0.5) * 38;
+                        const r = footprintRadiusFromTemplate(t2, scalar);
+                        if (canPlace(ax, az, r)) {
+                            x = ax;
+                            z = az;
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if (!ok) continue;
+                    if (placeAt(x, z, scalar, (rand() - 0.5) * Math.PI * 0.5, t2)) placed++;
                 }
-            });
+            }
 
-            console.log(`✅ City built: ${placed} buildings (Eiffel-safe + spaced, frustum culling enabled)`);
+            // Starter clusters around hero/Eiffel for immediate city density.
+            const starterTarget = DENSITY_TUNING.cityStarterClusters[State.qualityTier] || 16;
+            const starterCenters = [
+                new THREE.Vector2(-300, -470),
+                new THREE.Vector2(300, -470),
+                new THREE.Vector2(-340, -620),
+                new THREE.Vector2(340, -620),
+                new THREE.Vector2(-250, -780),
+                new THREE.Vector2(250, -780),
+                new THREE.Vector2(-120, -860),
+                new THREE.Vector2(120, -860),
+                new THREE.Vector2(0, -920)
+            ];
+
+            let starterPlaced = 0;
+            let starterAttempts = 0;
+            while (starterPlaced < starterTarget && starterAttempts < starterTarget * 30) {
+                starterAttempts++;
+                const center = starterCenters[Math.floor(rand() * starterCenters.length)];
+                const scalar = 0.82 + rand() * 0.34;
+                const t2 = useFallback ? null : templates[Math.floor(rand() * templates.length)];
+                const jitterX = (rand() - 0.5) * 140;
+                const jitterZ = (rand() - 0.5) * 120;
+                const x = center.x + jitterX;
+                const z = center.y + jitterZ;
+                const rotY = (rand() - 0.5) * Math.PI * 0.9;
+                if (!placeAt(x, z, scalar, rotY, t2)) continue;
+                starterPlaced++;
+                placed++;
+            }
+
+            pushApart(cityInstances, State.isMobile ? 92 : 126, 4);
+
+            ensureWorldGroups();
+            groups.bgRoot.add(cityGroup);
+
+            const zones = buildStreamZonesFromItems(cityLods, bands.zoneSize, 105);
+            cityZones.length = 0;
+            for (let i = 0; i < zones.length; i++) cityZones.push(zones[i]);
+
+            cityPlacedCount = placed;
+            console.log(`✅ City built: ${cityPlacedCount} buildings, ${cityLods.length} streamed objects in ${cityZones.length} zones`);
+            if (DEBUG_STREAMING) {
+                console.log(`🧪 City debug | starterPlaced=${starterPlaced} | baseCount=${baseCount}`);
+            }
+        }
+
+        function createMountains() {
+            ensureWorldGroups();
+            if (!groups.bgRoot) return null;
+
+            if (groups.mountains && groups.mountains.parent) {
+                groups.mountains.parent.remove(groups.mountains);
+            }
+
+            const mountainGroup = new THREE.Group();
+            mountainGroup.name = 'mountains';
+
+            const anchors = [
+                { x: -1400, z: -1500, targetHeight: 720, scale: 1.18, rotY: 0.12 },
+                { x: -520, z: -1760, targetHeight: 640, scale: 1.0, rotY: -0.24 },
+                { x: 420, z: -1820, targetHeight: 680, scale: 1.06, rotY: 0.18 },
+                { x: 1300, z: -1520, targetHeight: 700, scale: 1.14, rotY: -0.08 }
+            ];
+
+            if (loadedModels.mountains && loadedModels.mountains.length > 0) {
+                for (let i = 0; i < anchors.length; i++) {
+                    const anchor = anchors[i];
+                    const src = loadedModels.mountains[i % loadedModels.mountains.length];
+                    if (!src?.scene) continue;
+
+                    const clone = src.scene.clone(true);
+                    improveTextureFiltering(clone);
+                    clone.traverse((child) => {
+                        if (!child.isMesh) return;
+                        child.castShadow = false;
+                        child.receiveShadow = true;
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach((m) => {
+                            if (!m) return;
+                            if (m.metalness !== undefined) m.metalness = 0.02;
+                            if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, 0.82);
+                            m.fog = true;
+                            m.needsUpdate = true;
+                        });
+                    });
+
+                    const normalized = normalizeToBaseline(clone, {
+                        targetHeight: anchor.targetHeight,
+                        clampMin: 0.06,
+                        clampMax: 42,
+                        minHeightBoost: 1
+                    });
+                    normalized.wrapper.scale.multiplyScalar(anchor.scale);
+                    const y = getGroundY(anchor.x, anchor.z, 0);
+                    normalized.wrapper.position.set(anchor.x, y - 8, anchor.z);
+                    normalized.wrapper.rotation.y = anchor.rotY;
+                    mountainGroup.add(normalized.wrapper);
+                }
+            } else {
+                for (let i = 0; i < anchors.length; i++) {
+                    const anchor = anchors[i];
+                    const mesh = new THREE.Mesh(
+                        new THREE.ConeGeometry(340, anchor.targetHeight, 10),
+                        MATERIALS.riverBed.clone()
+                    );
+                    mesh.position.set(anchor.x, getGroundY(anchor.x, anchor.z, 0) + anchor.targetHeight * 0.42, anchor.z);
+                    mesh.rotation.y = anchor.rotY;
+                    mesh.scale.setScalar(anchor.scale);
+                    mountainGroup.add(mesh);
+                }
+            }
+
+            groups.mountains = mountainGroup;
+            groups.bgRoot.add(mountainGroup);
+            return mountainGroup;
         }
 
 
@@ -2158,13 +3212,611 @@
         }
 
 
-        // REMOVED: Manual culling - now using Three.js built-in frustum culling
-        // which runs automatically on the GPU
+        function getStreamingBands(kind) {
+            const table = kind === 'tree' ? STREAMING_BANDS.tree : STREAMING_BANDS.city;
+            return table[State.qualityTier] || table.MEDIUM;
+        }
+
+        function cloneMaterialsOnObject(root) {
+            root.traverse((o) => {
+                if (!o.isMesh || !o.material) return;
+                if (Array.isArray(o.material)) {
+                    o.material = o.material.map((m) => (m ? m.clone() : m));
+                } else {
+                    o.material = o.material.clone();
+                }
+            });
+        }
+
+        function collectObjectMaterials(root) {
+            const mats = [];
+            const seen = new Set();
+            root.traverse((o) => {
+                if (!o.isMesh || !o.material) return;
+                const arr = Array.isArray(o.material) ? o.material : [o.material];
+                for (let i = 0; i < arr.length; i++) {
+                    const m = arr[i];
+                    if (!m || seen.has(m)) continue;
+                    if (m.opacity === undefined) continue;
+                    seen.add(m);
+                    if (m.userData._streamBaseOpacity === undefined) {
+                        m.userData._streamBaseOpacity = m.opacity;
+                        m.userData._streamBaseTransparent = !!m.transparent;
+                        m.userData._streamBaseDepthWrite = m.depthWrite !== undefined ? m.depthWrite : true;
+                    }
+                    mats.push(m);
+                }
+            });
+            return mats;
+        }
+
+        function setMaterialsAlpha(materials, alpha) {
+            const a = THREE.MathUtils.clamp(alpha, 0, 1);
+            for (let i = 0; i < materials.length; i++) {
+                const m = materials[i];
+                const baseOpacity = m.userData._streamBaseOpacity ?? 1;
+                const targetOpacity = baseOpacity * a;
+                const useBlend = targetOpacity < (baseOpacity - 0.01);
+                const nextTransparent = useBlend ? true : !!m.userData._streamBaseTransparent;
+                const nextDepthWrite = useBlend ? false : (m.userData._streamBaseDepthWrite ?? true);
+                if (m.transparent !== nextTransparent || m.depthWrite !== nextDepthWrite) {
+                    m.needsUpdate = true;
+                }
+                m.opacity = targetOpacity;
+                m.transparent = nextTransparent;
+                m.depthWrite = nextDepthWrite;
+            }
+        }
+
+        function buildStreamObject(kind, hiNode, proxyNode, silhouetteNode, rand) {
+            cloneMaterialsOnObject(hiNode);
+            cloneMaterialsOnObject(proxyNode);
+
+            const stream = new THREE.Group();
+            stream.name = `${kind}Stream`;
+
+            stream.add(silhouetteNode);
+            stream.add(proxyNode);
+            stream.add(hiNode);
+
+            silhouetteNode.visible = false;
+            proxyNode.visible = false;
+            hiNode.visible = false;
+
+            const bands = getStreamingBands(kind);
+            const fadeMs = bands.fadeMsMin + rand() * (bands.fadeMsMax - bands.fadeMsMin);
+
+            stream.userData.stream = {
+                kind,
+                stage: 0,
+                transition: null,
+                bands,
+                proxy: proxyNode,
+                hi: hiNode,
+                silhouette: silhouetteNode,
+                proxyMats: collectObjectMaterials(proxyNode),
+                hiMats: collectObjectMaterials(hiNode),
+                fadeMs,
+                visibleLastFrame: false
+            };
+
+            stream.frustumCulled = true;
+            return stream;
+        }
+
+        function applyStageImmediate(stream, stage) {
+            const d = stream.userData.stream;
+            d.stage = stage;
+            d.transition = null;
+            streamTransitions.delete(stream);
+
+            if (stage <= 0) {
+                stream.visible = false;
+                d.silhouette.visible = false;
+                d.proxy.visible = false;
+                d.hi.visible = false;
+                setMaterialsAlpha(d.proxyMats, 0);
+                setMaterialsAlpha(d.hiMats, 0);
+                return;
+            }
+
+            stream.visible = true;
+            if (stage === 1) {
+                d.silhouette.visible = true;
+                d.silhouette.scale.setScalar(1);
+                d.proxy.visible = false;
+                d.hi.visible = false;
+                setMaterialsAlpha(d.proxyMats, 0);
+                setMaterialsAlpha(d.hiMats, 0);
+                return;
+            }
+
+            if (stage === 2) {
+                d.silhouette.visible = false;
+                d.proxy.visible = true;
+                d.hi.visible = false;
+                setMaterialsAlpha(d.proxyMats, 1);
+                setMaterialsAlpha(d.hiMats, 0);
+                return;
+            }
+
+            d.silhouette.visible = false;
+            d.proxy.visible = false;
+            d.hi.visible = true;
+            setMaterialsAlpha(d.proxyMats, 0);
+            setMaterialsAlpha(d.hiMats, 1);
+        }
+
+        function beginStageTransition(stream, nextStage, nowMs) {
+            const d = stream.userData.stream;
+            d.transition = {
+                toStage: nextStage,
+                startMs: nowMs,
+                durationMs: d.fadeMs
+            };
+            streamTransitions.add(stream);
+            stream.visible = true;
+
+            if (nextStage === 1) {
+                d.silhouette.visible = true;
+                d.silhouette.scale.setScalar(0.88);
+                d.proxy.visible = false;
+                d.hi.visible = false;
+                setMaterialsAlpha(d.proxyMats, 0);
+                setMaterialsAlpha(d.hiMats, 0);
+                return;
+            }
+
+            if (nextStage === 2) {
+                d.silhouette.visible = true;
+                d.proxy.visible = true;
+                d.hi.visible = false;
+                setMaterialsAlpha(d.proxyMats, 0);
+                setMaterialsAlpha(d.hiMats, 0);
+                return;
+            }
+
+            d.silhouette.visible = false;
+            d.proxy.visible = true;
+            d.hi.visible = true;
+            setMaterialsAlpha(d.proxyMats, 1);
+            setMaterialsAlpha(d.hiMats, 0);
+        }
+
+        function getTargetStageForDistance(d, dist) {
+            const h = d.bands.hysteresis || 0.10;
+            const far = d.bands.farStart * ((d.stage > 0 || d.transition) ? (1 + h) : 1);
+            if (dist > far) return 0;
+
+            const mid = d.bands.midStart * ((d.stage > 1 || (d.transition && d.transition.toStage > 1)) ? (1 + h * 0.55) : 1);
+            if (dist > mid) return 1;
+
+            const near = d.bands.nearStart * ((d.stage > 2 || (d.transition && d.transition.toStage > 2)) ? (1 + h * 0.35) : 1);
+            if (dist > near) return 2;
+            return 3;
+        }
+
+        function requestStreamStage(stream, targetStage, nowMs, dist = Infinity) {
+            const d = stream.userData.stream;
+            const clampedTarget = THREE.MathUtils.clamp(targetStage, 0, 3);
+
+            // Downgrades are instant to keep frame cost predictable.
+            if (clampedTarget < d.stage) {
+                applyStageImmediate(stream, clampedTarget);
+                return;
+            }
+
+            if (d.transition) {
+                if (clampedTarget <= d.transition.toStage) {
+                    if (clampedTarget === 3 && dist <= d.bands.nearFull && d.transition.toStage === 3) {
+                        d.transition.startMs = Math.min(d.transition.startMs, nowMs - d.transition.durationMs * 0.8);
+                    }
+                    return;
+                }
+                return;
+            }
+
+            if (clampedTarget === d.stage) return;
+            let nextStage = Math.min(clampedTarget, d.stage + 1);
+            if (clampedTarget === 3 && dist <= d.bands.nearFull) {
+                nextStage = Math.min(3, d.stage + 2);
+            }
+            beginStageTransition(stream, nextStage, nowMs);
+        }
+
+        function updateStreamTransitions(nowMs) {
+            if (streamTransitions.size === 0) return;
+
+            const finished = [];
+            streamTransitions.forEach((stream) => {
+                const d = stream.userData.stream;
+                const tr = d.transition;
+                if (!tr) {
+                    finished.push(stream);
+                    return;
+                }
+
+                const t = THREE.MathUtils.clamp((nowMs - tr.startMs) / Math.max(1, tr.durationMs), 0, 1);
+
+                if (tr.toStage === 1) {
+                    d.silhouette.scale.setScalar(0.88 + 0.12 * t);
+                } else if (tr.toStage === 2) {
+                    setMaterialsAlpha(d.proxyMats, t);
+                    if (t > 0.75) d.silhouette.visible = false;
+                } else if (tr.toStage === 3) {
+                    setMaterialsAlpha(d.hiMats, t);
+                    setMaterialsAlpha(d.proxyMats, Math.max(0, 1 - t));
+                }
+
+                if (t >= 1) {
+                    applyStageImmediate(stream, tr.toStage);
+                    finished.push(stream);
+                }
+            });
+
+            for (let i = 0; i < finished.length; i++) {
+                streamTransitions.delete(finished[i]);
+            }
+        }
+
+        function updateStreamZones(zones, camera, nowMs, visibilityGate = null) {
+            if (!zones || zones.length === 0) return;
+            const camX = camera.position.x;
+            const camZ = camera.position.z;
+            const preloadMode = !!(visibilityGate && visibilityGate.enabled && visibilityGate.preloadMode);
+            const offscreenPreloadBoost = Math.max(1, visibilityGate?.offscreenPreloadBoost || 1);
+            const offscreenMaxStage = visibilityGate?.offscreenMaxStage || 2;
+
+            for (let z = 0; z < zones.length; z++) {
+                const zone = zones[z];
+                _sphere.set(zone.center, zone.radius + zone.maxFarStart * 0.3);
+                const zoneVisible = _frustum.intersectsSphere(_sphere);
+
+                if (!zoneVisible && !preloadMode) {
+                    for (let i = 0; i < zone.items.length; i++) {
+                        zone.items[i].visible = false;
+                    }
+                    continue;
+                }
+
+                for (let i = 0; i < zone.items.length; i++) {
+                    const stream = zone.items[i];
+                    const d = stream.userData.stream;
+                    const dx = stream.position.x - camX;
+                    const dz = stream.position.z - camZ;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    let targetStage = getTargetStageForDistance(d, dist);
+
+                    if (visibilityGate && visibilityGate.enabled) {
+                        const distanceScale = visibilityGate.distanceScale || 1;
+                        const maxDist = d.bands.farStart * distanceScale;
+                        if (dist > maxDist) {
+                            targetStage = 0;
+                        } else if (targetStage > visibilityGate.maxStage) {
+                            targetStage = visibilityGate.maxStage;
+                        }
+                    }
+
+                    // Allow off-frustum preload while cloud mask is active so reveal is ready.
+                    if (!zoneVisible && preloadMode) {
+                        const preloadDist = d.bands.farStart * offscreenPreloadBoost;
+                        if (dist <= preloadDist) {
+                            targetStage = Math.max(1, targetStage);
+                            targetStage = Math.min(targetStage, offscreenMaxStage);
+                        } else {
+                            targetStage = 0;
+                        }
+                    }
+
+                    if (targetStage === 0 && d.stage === 0 && !d.transition) {
+                        stream.visible = false;
+                        continue;
+                    }
+                    stream.visible = true;
+                    requestStreamStage(stream, targetStage, nowMs, dist);
+                    if (!zoneVisible) stream.visible = false;
+                }
+            }
+        }
+
+        const STREAM_STAGE_READINESS = [0, 0.34, 0.72, 1];
+        function scoreStreamReadiness(streamData, nowMs) {
+            const stage = THREE.MathUtils.clamp(streamData?.stage ?? 0, 0, 3);
+            let score = STREAM_STAGE_READINESS[stage] || 0;
+
+            if (!streamData?.transition) return score;
+
+            const toStage = THREE.MathUtils.clamp(streamData.transition.toStage ?? stage, 0, 3);
+            const duration = Math.max(1, streamData.transition.durationMs || 1);
+            const t = THREE.MathUtils.clamp((nowMs - streamData.transition.startMs) / duration, 0, 1);
+            const fromScore = STREAM_STAGE_READINESS[stage] || 0;
+            const toScore = STREAM_STAGE_READINESS[toStage] || fromScore;
+            score = THREE.MathUtils.lerp(fromScore, toScore, t);
+            return score;
+        }
+
+        function computeStreamingReadiness(nowMs) {
+            if (!camera) return 0;
+
+            const sampling = CLOUD_TRANSITION_CONFIG.readinessSampling;
+            const minDist = sampling.minDistance;
+            const maxDist = sampling.maxDistance;
+            const minDot = sampling.minForwardDot;
+            const distRange = Math.max(1, maxDist - minDist);
+
+            camera.getWorldDirection(_readinessForward);
+
+            let weightedScore = 0;
+            let weightedSamples = 0;
+
+            function sampleStreams(streams, baseWeight) {
+                for (let i = 0; i < streams.length; i++) {
+                    const stream = streams[i];
+                    const streamData = stream?.userData?.stream;
+                    if (!streamData) continue;
+
+                    const dx = stream.position.x - camera.position.x;
+                    const dy = stream.position.y - camera.position.y;
+                    const dz = stream.position.z - camera.position.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist < minDist || dist > maxDist) continue;
+
+                    _readinessDir.set(dx, dy, dz).divideScalar(Math.max(dist, 0.0001));
+                    const dot = _readinessDir.dot(_readinessForward);
+                    if (dot < minDot) continue;
+
+                    const distWeight = 1 - THREE.MathUtils.clamp((dist - minDist) / distRange, 0, 1);
+                    const frontWeight = THREE.MathUtils.clamp((dot - minDot) / Math.max(0.0001, 1 - minDot), 0, 1);
+                    const sampleWeight = baseWeight * (0.28 + distWeight * 0.72) * (0.3 + frontWeight * 0.7);
+                    const readiness = scoreStreamReadiness(streamData, nowMs);
+
+                    weightedScore += readiness * sampleWeight;
+                    weightedSamples += sampleWeight;
+                }
+            }
+
+            sampleStreams(cityLods, 1.0);
+            sampleStreams(treeLods, sampling.treeWeight || 0.4);
+
+            if (weightedSamples < (sampling.minWeightedSamples || 8)) return 0;
+            return THREE.MathUtils.clamp(weightedScore / weightedSamples, 0, 1);
+        }
+
+        function prewarmStreamingAtHome() {
+            if (!camera) return;
+            const nowMs = performance.now();
+            const preloadGate = {
+                enabled: true,
+                distanceScale: 0.72,
+                maxStage: 2,
+                treeProxyScale: 0.72,
+                preloadMode: true,
+                offscreenPreloadBoost: 2.25,
+                offscreenMaxStage: 2
+            };
+            if (DEBUG_CLOUD_PRELOAD) console.log('🌫️ [prewarm-home] running offscreen preload pass');
+
+            _projMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+            _frustum.setFromProjectionMatrix(_projMatrix);
+            if (cityZones.length > 0) updateStreamZones(cityZones, camera, nowMs, preloadGate);
+            if (treeZones.length > 0) updateStreamZones(treeZones, camera, nowMs, preloadGate);
+            updateStreamTransitions(nowMs + 340);
+            State.streamingReadiness = computeStreamingReadiness(nowMs + 340);
+        }
+
+        function applyCloudCurtainState(mode) {
+            if (!cloudManager) return;
+            if (mode === previousCloudCurtainState) return;
+
+            previousCloudCurtainState = mode;
+            if (DEBUG_CLOUD_PRELOAD) console.log(`🌫️ [curtain] ${mode}`);
+
+            if (mode === 'HOME_IDLE') {
+                cloudManager.setBaseline();
+            } else if (mode === 'TRANSITION_MASK') {
+                cloudManager.setMaskStrong();
+            } else if (mode === 'TRANSITION_REVEAL') {
+                cloudManager.fadeOut();
+            } else {
+                cloudManager.setOff();
+            }
+        }
+
+        function shouldRunSectionTransition(fromSection, toSection) {
+            if (fromSection === toSection) return false;
+            if (fromSection === 0 || toSection === 0) return true;
+            return SCENE_FLOW_CONFIG.transitionSections.has(toSection);
+        }
+
+        function beginSceneTransition(toSection, progressVelocity, nowMs) {
+            sceneFlow.transition.active = true;
+            sceneFlow.transition.fromSection = sceneFlow.lastSection;
+            sceneFlow.transition.toSection = toSection;
+            sceneFlow.transition.startMs = nowMs;
+            sceneFlow.transition.durationMs =
+                (toSection === 0 || sceneFlow.lastSection === 0)
+                    ? SCENE_FLOW_CONFIG.homeTransitionMs
+                    : SCENE_FLOW_CONFIG.sectionTransitionMs;
+            sceneFlow.transition.deadlineMs = nowMs + BG_REVEAL_TIMEOUT_MS;
+            sceneFlow.transition.direction = progressVelocity >= 0 ? 1 : -1;
+            sceneFlow.state = SceneState.TRANSITION;
+
+            cloudCurtainState = 'TRANSITION_MASK';
+            bgRevealLocked = true;
+            setBackgroundVisibility(false);
+            if (DEBUG_CLOUD_PRELOAD) {
+                console.log(`🎬 [transition] ${sceneFlow.transition.fromSection} -> ${toSection}`);
+            }
+        }
+
+        function updateSceneStateMachine(nowMs, progressVelocity = 0) {
+            if (!groups.bgRoot) return;
+
+            if (!sceneFlow.bootDeadlineMs) {
+                sceneFlow.bootDeadlineMs = nowMs + SCENE_FLOW_CONFIG.bootTimeoutMs;
+            }
+
+            if (!bgGateState.ready && nowMs >= sceneFlow.bootDeadlineMs) {
+                bgGateState.timedOut = true;
+            }
+
+            const currentSection = State.section;
+
+            if (sceneFlow.state === SceneState.BOOT_LOADING) {
+                cloudCurtainState = 'HOME_IDLE';
+                bgRevealLocked = true;
+                setBackgroundVisibility(false);
+
+                if (bgGateState.ready || bgGateState.timedOut) {
+                    sceneFlow.state = SceneState.HOME_READY;
+                    sceneFlow.lastSection = 0;
+                }
+                return;
+            }
+
+            if (!sceneFlow.transition.active && shouldRunSectionTransition(sceneFlow.lastSection, currentSection)) {
+                beginSceneTransition(currentSection, progressVelocity, nowMs);
+            }
+
+            if (sceneFlow.transition.active) {
+                const tr = sceneFlow.transition;
+                const tNorm = THREE.MathUtils.clamp(
+                    (nowMs - tr.startMs) / Math.max(1, tr.durationMs),
+                    0,
+                    1
+                );
+                const readyForReveal =
+                    (bgGateState.ready && State.streamingReadiness >= BG_READY_THRESHOLD) ||
+                    bgGateState.timedOut ||
+                    nowMs >= tr.deadlineMs;
+
+                if (tr.toSection === 0) {
+                    cloudCurtainState = (tNorm < SCENE_FLOW_CONFIG.homeReturnMaskUntil) ? 'TRANSITION_MASK' : 'HOME_IDLE';
+                    bgRevealLocked = true;
+                    setBackgroundVisibility(false);
+
+                    if (tNorm >= 1) {
+                        tr.active = false;
+                        sceneFlow.state = SceneState.HOME_READY;
+                        sceneFlow.lastSection = 0;
+                    }
+                    return;
+                }
+
+                if (!readyForReveal || tNorm < SCENE_FLOW_CONFIG.revealAt) {
+                    cloudCurtainState = 'TRANSITION_MASK';
+                    bgRevealLocked = true;
+                    setBackgroundVisibility(false);
+                } else {
+                    cloudCurtainState = 'TRANSITION_REVEAL';
+                    bgRevealLocked = false;
+                    setBackgroundVisibility(true);
+                }
+
+                if (tNorm >= 1 && readyForReveal) {
+                    tr.active = false;
+                    sceneFlow.state = SceneState.SECTION_READY;
+                    cloudCurtainState = 'OFF';
+                    bgRevealLocked = false;
+                    setBackgroundVisibility(true);
+                }
+                sceneFlow.lastSection = currentSection;
+                return;
+            }
+
+            if (currentSection === 0 || State.progress <= BG_HIDE_PROGRESS + 0.003) {
+                sceneFlow.state = SceneState.HOME_READY;
+                sceneFlow.lastSection = 0;
+                cloudCurtainState = 'HOME_IDLE';
+                bgRevealLocked = true;
+                setBackgroundVisibility(false);
+                return;
+            }
+
+            sceneFlow.state = SceneState.SECTION_READY;
+            sceneFlow.lastSection = currentSection;
+            cloudCurtainState = 'OFF';
+            const canReveal =
+                (bgGateState.ready && State.streamingReadiness >= BG_READY_THRESHOLD) ||
+                bgGateState.timedOut;
+            bgRevealLocked = !canReveal;
+            setBackgroundVisibility(canReveal);
+        }
+
+        async function compileBackgroundAssets() {
+            if (!renderer || !scene || !camera || !groups.bgRoot) return;
+            if (compileAllPromise) {
+                await compileAllPromise;
+                return;
+            }
+
+            compileAllPromise = (async () => {
+                const previousVisible = groups.bgRoot.visible;
+                groups.bgRoot.visible = true;
+                try {
+                    if (typeof renderer.compileAsync === 'function') {
+                        await renderer.compileAsync(scene, camera);
+                    } else if (typeof renderer.compile === 'function') {
+                        renderer.compile(scene, camera);
+                    }
+                    if (DEBUG_CLOUD_PRELOAD) console.log('🛠️ [compile] background compile complete');
+                } catch (error) {
+                    console.warn('⚠️ Background compile skipped:', error);
+                } finally {
+                    groups.bgRoot.visible = previousVisible;
+                }
+            })();
+
+            await compileAllPromise;
+            bgGateState.compiled = true;
+            bgGateState.ready = !!(bgGateState.assetsLoaded && bgGateState.compiled);
+            if (bgGateState.ready) bgGateState.timedOut = false;
+        }
+
+        function buildStreamZonesFromItems(items, zoneSize, yCenter = 80) {
+            const zones = [];
+            const zoneMap = new Map();
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const kx = Math.floor(item.position.x / zoneSize);
+                const kz = Math.floor(item.position.z / zoneSize);
+                const key = `${kx},${kz}`;
+
+                if (!zoneMap.has(key)) {
+                    zoneMap.set(key, {
+                        items: [],
+                        center: new THREE.Vector3((kx + 0.5) * zoneSize, yCenter, (kz + 0.5) * zoneSize),
+                        radius: zoneSize * 0.88,
+                        maxFarStart: 0
+                    });
+                }
+                const zone = zoneMap.get(key);
+                zone.items.push(item);
+                const farStart = item.userData?.stream?.bands?.farStart || 0;
+                if (farStart > zone.maxFarStart) zone.maxFarStart = farStart;
+            }
+            zoneMap.forEach((z) => zones.push(z));
+            return zones;
+        }
+
         function updateCityCulling(nowMs) {
-            // Three.js handles culling automatically via frustumCulled = true
-            // This function kept for compatibility but does minimal work
             if (!groups.city || !groups.city.visible) return;
-            // No manual iteration - let Three.js handle it
+        }
+
+        function logStreamingDebug(context = 'runtime') {
+            if (!DEBUG_STREAMING || !renderer) return;
+            console.log(
+                `🧪 Stream Debug [${context}] seed=${_layoutSeed} tier=${State.qualityTier} dpr=${renderer.getPixelRatio().toFixed(2)} buildings=${cityPlacedCount} trees=${treePlacedCount}`
+            );
+        }
+
+        function enforceMeshCulling(root) {
+            if (!root) return;
+            root.traverse((obj) => {
+                if (!obj.isMesh) return;
+                if (obj.renderOrder >= 9000) return; // cloud curtain meshes intentionally uncullable
+                obj.frustumCulled = true;
+            });
         }
 
 
@@ -2239,7 +3891,16 @@
                     if (child.isMesh) {
                         child.castShadow = false;
                         child.receiveShadow = false;
-                        if (child.material) child.material.envMapIntensity = 1.0;
+                        if (child.material) {
+                            child.material.envMapIntensity = 1.5;
+                            // Prevent pitch-black on highly metallic surfaces
+                            if (child.material.metalness !== undefined && child.material.metalness > 0.9) {
+                                child.material.metalness = 0.85;
+                            }
+                            if (child.material.roughness !== undefined && child.material.roughness < 0.1) {
+                                child.material.roughness = 0.15;
+                            }
+                        }
                     }
                 });
 
@@ -2260,67 +3921,44 @@
             beacon.position.y = 310;
             eiffelTower.add(beacon);
 
-            const spot = new THREE.SpotLight(0xffaa00, 4.2, 400, 0.3, 0.5, 1);
-            spot.position.set(0, 305, 0);
-            spot.target.position.set(0, 1000, 0);
-            eiffelTower.add(spot);
-            eiffelTower.userData.spot = spot;
+            if (State.qualityTier === 'HIGH') {
+                const spot = new THREE.SpotLight(0xffaa00, 4.2, 400, 0.3, 0.5, 1);
+                spot.position.set(0, 305, 0);
+                spot.target.position.set(0, 1000, 0);
+                eiffelTower.add(spot);
+                eiffelTower.userData.spot = spot;
+            }
 
             eiffelTower.position.set(0, 0, -300);
-            scene.add(eiffelTower);
+            ensureWorldGroups();
+            groups.heroRoot.add(eiffelTower);
             groups.eiffel = eiffelTower;
         }
 
         function createCloudLayers() {
-            const quality = getQualitySettings();
-            const group = new THREE.Group();
-            group.name = "clouds";
+            if (!scene || !camera) return null;
 
-            const tl = new THREE.TextureLoader();
-            const tex = tl.load(
-                assetUrl('/3d-models/cloud.png'),
-                (t) => {
-                    t.colorSpace = THREE.SRGBColorSpace;
-                    t.minFilter = THREE.LinearMipmapLinearFilter;
-                    t.magFilter = THREE.LinearFilter;
-                    t.generateMipmaps = true;
-                    t.needsUpdate = true;
-                }
-            );
-
-
-            const mat = new THREE.MeshBasicMaterial({
-                map: tex,
-                transparent: true,
-                opacity: 0.32,
-                depthWrite: false,
-                depthTest: false,        // ✅ prevents ugly clipping
-                premultipliedAlpha: true,
-                alphaTest: 0.01          // ✅ removes dirty edges
-            });
-
-            const planeGeo = new THREE.PlaneGeometry(700, 420);
-
-            for (let i = 0; i < quality.cloudCount; i++) {
-                const p = new THREE.Mesh(planeGeo, mat);
-                // 🌥️ 360° CLOUD RING (like before)
-                const radius = 1400 + Math.random() * 1200;
-                const angle = Math.random() * Math.PI * 2;
-
-                p.position.set(
-                    Math.cos(angle) * radius,
-                    220 + Math.random() * 320,
-                    Math.sin(angle) * radius
-                );
-
-                p.rotation.y = Math.random() * Math.PI * 2;
-                p.renderOrder = -10; // behind most things
-                p.scale.setScalar(0.8 + Math.random() * 1.8);
-                group.add(p);
+            if (cloudManager) {
+                cloudManager.dispose();
+                cloudManager = null;
             }
 
-            scene.add(group);
-            groups.clouds = group;
+            cloudManager = new CloudManager({
+                THREE,
+                scene,
+                camera,
+                textureUrl: assetUrl('/3d-models/cloud.png'),
+                qualityTier: State.qualityTier,
+                config: CLOUD_TRANSITION_CONFIG
+            });
+
+            worldStreamingManager = new WorldStreamingManager(WORLD_STREAMING_RUNTIME_CONFIG);
+
+            groups.clouds = cloudManager.root;
+            previousCloudCurtainState = 'OFF';
+            cloudCurtainState = 'HOME_IDLE';
+            applyCloudCurtainState(cloudCurtainState);
+            return groups.clouds;
         }
 
 
@@ -2359,18 +3997,20 @@
                     if (child.isMesh) {
                         child.castShadow = false;
                         child.receiveShadow = false;
-                        if (child.material) child.material.envMapIntensity = 1.0;
+                        if (child.material) child.material.envMapIntensity = 1.5;
                     }
                 });
 
                 const normalized = normalizeToBaseline(model, { targetHeight: 12 });
                 scooter.add(normalized.wrapper);
 
-                const beam = new THREE.SpotLight(0xffffff, 2, 30, 0.5, 0.5);
-                beam.position.set(2, 8, 0);
-                beam.target.position.set(10, 0, 0);
-                scooter.add(beam);
-                scooter.add(beam.target);
+                if (State.qualityTier !== 'LOW') {
+                    const beam = new THREE.SpotLight(0xffffff, 2, 30, 0.5, 0.5);
+                    beam.position.set(2, 8, 0);
+                    beam.target.position.set(10, 0, 0);
+                    scooter.add(beam);
+                    scooter.add(beam.target);
+                }
             } else {
                 // No model loaded - skip scooter entirely
                 console.warn('⚠️ Scooter model not loaded, skipping');
@@ -2380,7 +4020,8 @@
             scooter.position.set(-150, 0, 100);
             scooter.rotation.y = Math.PI / 4;
             scooter.userData = { floatOffset: Math.random() * 10 };
-            scene.add(scooter);
+            ensureWorldGroups();
+            groups.heroRoot.add(scooter);
         }
 
         // REMOVED: Particles - not using loaded models
@@ -2392,122 +4033,150 @@
             // No procedural generation - skip entirely
         }
 
-        // Camera paths (unchanged)
-        const desktopLookAtPath = new THREE.CatmullRomCurve3([
-            // Hero / Welcome: lock to Eiffel
-            new THREE.Vector3(0, 105, -300),
+        // Camera path points are centralized so safety tuning is deterministic.
+        const CAMERA_PATH_POINTS = {
+            desktop: {
+                camera: [
+                    [90, 152, 500],
+                    [240, 146, 310],
+                    [245, 142, 70],
+                    [210, 148, -190],
+                    [70, 154, -440],
+                    [-140, 158, -680],
+                    [-250, 148, -470],
+                    [-230, 142, -180],
+                    [-40, 146, 80],
+                    [55, 150, 290],
+                    [90, 152, 500]
+                ],
+                lookAt: [
+                    [0, 120, -300],
+                    [80, 116, -420],
+                    [92, 110, -520],
+                    [50, 112, -590],
+                    [0, 114, -620],
+                    [-70, 120, -700],
+                    [-120, 112, -540],
+                    [-85, 108, -360],
+                    [-10, 110, -230],
+                    [0, 116, -250],
+                    [0, 120, -300]
+                ]
+            },
+            mobile: {
+                camera: [
+                    [24, 142, 430],
+                    [120, 136, 280],
+                    [136, 132, 120],
+                    [128, 136, -40],
+                    [40, 142, -230],
+                    [-52, 146, -380],
+                    [-110, 138, -260],
+                    [-80, 134, -120],
+                    [-18, 136, 10],
+                    [16, 140, 180],
+                    [24, 142, 430]
+                ],
+                lookAt: [
+                    [0, 104, -300],
+                    [40, 100, -360],
+                    [55, 98, -430],
+                    [45, 98, -500],
+                    [10, 102, -560],
+                    [-35, 105, -590],
+                    [-52, 100, -470],
+                    [-28, 98, -360],
+                    [-4, 100, -285],
+                    [0, 102, -255],
+                    [0, 104, -300]
+                ]
+            }
+        };
 
-            // Intro: start revealing the city to the right
-            new THREE.Vector3(220, 95, -520),
+        function makeCurve(points) {
+            return new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+        }
 
-            // Journey: swing back across center (more “wide” feel)
-            new THREE.Vector3(120, 85, -740),
-
-            // Architecture: pan left over dense blocks
-            new THREE.Vector3(-260, 95, -680),
-
-            // Cloud: keep gaze higher + slightly further
-            new THREE.Vector3(-180, 140, -980),
-
-            // Data: focus deeper where your spheres live (around z ~ -900)
-            new THREE.Vector3(0, 120, -980),
-
-            // Skills: bias to left where codeBlocks are (x ~ -200, z ~ -500/-700)
-            new THREE.Vector3(-220, 90, -720),
-
-            // Projects: sweep right again for variety
-            new THREE.Vector3(240, 95, -760),
-
-            // Vision: ease back toward Eiffel region
-            new THREE.Vector3(120, 110, -420),
-
-            // Contact: clean centered framing
-            new THREE.Vector3(0, 115, -300),
-
-            // Close the loop
-            new THREE.Vector3(0, 105, -300)
-        ]);
+        const desktopLookAtPath = makeCurve(CAMERA_PATH_POINTS.desktop.lookAt);
         desktopLookAtPath.closed = true;
 
-
-        const desktopCameraPath = new THREE.CatmullRomCurve3([
-            // Hero / Welcome: slightly higher, tighter to Eiffel
-            new THREE.Vector3(100, 130, 520),
-
-            // Intro: keep right-side reveal
-            new THREE.Vector3(220, 130, 260),
-
-            // Journey: swing back across center
-            new THREE.Vector3(120, 110, -220),
-
-            // Architecture: pan left over dense blocks
-            new THREE.Vector3(-260, 120, -680),
-
-            // Cloud: higher, further back for scale
-            new THREE.Vector3(-180, 150, -980),
-
-            // Data: focus deeper
-            new THREE.Vector3(0, 130, -980),
-
-            // Skills: left-side bias
-            new THREE.Vector3(-220, 100, -720),
-
-            // Projects: right-side sweep
-            new THREE.Vector3(240, 100, -760),
-
-            // Vision: ease back toward Eiffel
-            new THREE.Vector3(120, 120, -420),
-
-            // Contact: centered framing
-            new THREE.Vector3(0, 125, -300),
-
-            // Close the loop
-            new THREE.Vector3(100, 130, 520)
-        ]);
+        const desktopCameraPath = makeCurve(CAMERA_PATH_POINTS.desktop.camera);
         desktopCameraPath.closed = true;
 
-
-        const mobileCameraPath = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(20, 120, 420),
-            new THREE.Vector3(-55, 95, 300),
-            new THREE.Vector3(-95, 70, 190),
-            new THREE.Vector3(-20, 120, 20),
-            new THREE.Vector3(55, 190, -220),
-            new THREE.Vector3(15, 110, -460),
-            new THREE.Vector3(-70, 90, -420),
-            new THREE.Vector3(70, 120, -470),
-            new THREE.Vector3(20, 170, -250),
-            new THREE.Vector3(20, 110, 220),
-            new THREE.Vector3(20, 120, 420)
-        ]);
+        const mobileCameraPath = makeCurve(CAMERA_PATH_POINTS.mobile.camera);
         mobileCameraPath.closed = true;
 
-
-        const mobileLookAtPath = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0, 70, -300),
-            new THREE.Vector3(0, 55, -120),
-            new THREE.Vector3(-45, 40, 40),
-            new THREE.Vector3(0, 60, -280),
-            new THREE.Vector3(0, 50, -500),
-            new THREE.Vector3(0, 45, -660),
-            new THREE.Vector3(-40, 40, -520),
-            new THREE.Vector3(0, 45, -560),
-            new THREE.Vector3(0, 70, -320),
-            new THREE.Vector3(0, 55, -120),
-            new THREE.Vector3(0, 70, -300)
-        ]);
+        const mobileLookAtPath = makeCurve(CAMERA_PATH_POINTS.mobile.lookAt);
         mobileLookAtPath.closed = true;
-
 
         const getCameraPath = () => State.isMobile ? mobileCameraPath : desktopCameraPath;
         const getLookAtPath = () => State.isMobile ? mobileLookAtPath : desktopLookAtPath;
+
+        function samplePathPoint(path, t) {
+            const wrapped = ((t % 1) + 1) % 1;
+            return path.getPointAt(wrapped);
+        }
+
+        function applyCameraCollisionSafety(pos) {
+            if (!pos) return pos;
+            const safeDistance = CAMERA_PATH_TUNING.CAMERA_SAFE_DISTANCE;
+            const maxPush = CAMERA_PATH_TUNING.maxCollisionPush;
+            const blend = CAMERA_PATH_TUNING.collisionBlend;
+
+            _cameraSafeTarget.copy(pos);
+            let corrected = false;
+
+            for (let pass = 0; pass < 2; pass++) {
+                for (let i = 0; i < cityColliders.length; i++) {
+                    const c = cityColliders[i];
+                    const dx = _cameraSafeTarget.x - c.x;
+                    const dz = _cameraSafeTarget.z - c.z;
+                    const minR = c.r + safeDistance;
+                    const d2 = dx * dx + dz * dz;
+                    if (d2 >= minR * minR) continue;
+
+                    corrected = true;
+                    const d = Math.max(0.001, Math.sqrt(d2));
+                    _cameraSafeDirection.set(dx / d, dz / d);
+                    const push = Math.min((minR - d) + 1.2, maxPush);
+                    _cameraSafeTarget.x += _cameraSafeDirection.x * push;
+                    _cameraSafeTarget.z += _cameraSafeDirection.y * push;
+                }
+            }
+
+            const dxE = _cameraSafeTarget.x - EIFFEL_XZ.x;
+            const dzE = _cameraSafeTarget.z - EIFFEL_XZ.y;
+            const keepOut = EIFFEL_KEEP_OUT_R + safeDistance * 0.45;
+            const d2E = dxE * dxE + dzE * dzE;
+            if (d2E < keepOut * keepOut) {
+                corrected = true;
+                const dE = Math.max(0.001, Math.sqrt(d2E));
+                _cameraSafeDirection.set(dxE / dE, dzE / dE);
+                const pushE = Math.min((keepOut - dE) + 1, maxPush);
+                _cameraSafeTarget.x += _cameraSafeDirection.x * pushE;
+                _cameraSafeTarget.z += _cameraSafeDirection.y * pushE;
+            }
+
+            const groundY = getGroundY(_cameraSafeTarget.x, _cameraSafeTarget.z, SCENE_CONFIG.cameraMinY);
+            _cameraSafeTarget.y = Math.max(
+                _cameraSafeTarget.y,
+                groundY + CAMERA_PATH_TUNING.cameraGroundClearance,
+                SCENE_CONFIG.cameraMinY
+            );
+
+            pos.lerp(_cameraSafeTarget, corrected ? blend : 1);
+            return pos;
+        }
 
         // Visibility by section - ONLY loaded models + terrain
         function applySectionVisibility(section) {
             const setV = (key, v) => { if (groups[key]) groups[key].visible = v; };
 
             // Only show loaded GLB models
+            setV('heroRoot', true);  // Hero anchor should always stay readable.
             setV('city', true);      // Buildings from loaded models
+            setV('trees', true);     // Trees (GLB LOD + instanced proxies)
+            setV('mountains', true); // Background mountain strip
             setV('eiffel', true);    // Eiffel from loaded model
             setV('scooter', section >= 1 && section <= 2); // Scooter from loaded model
 
@@ -2556,9 +4225,9 @@
             rafId: null,
 
             // 🔥 ULTRA SLOW settings for cinematic scroll
-            wheelSpeed: 0.08,   // MUCH LOWER = much slower (was 0.45)
-            touchSpeed: 0.12,   // MUCH LOWER = much slower (was 0.55)
-            ease: 0.04,         // MUCH LOWER = much smoother/floaty (was 0.1)
+            wheelSpeed: 0.16,
+            touchSpeed: 0.20,
+            ease: 0.07,
 
             // safety
             epsilon: 0.2
@@ -2631,7 +4300,6 @@
             State.targetProgress = (scrollHeight > 0)
                 ? Math.max(0, Math.min(scrollY / scrollHeight, 1))
                 : 0;
-
             if (scrollHint && State.targetProgress > 0.02) scrollHint.classList.add('hidden');
         }
 
@@ -2665,7 +4333,6 @@
                 0,
                 maxY
             );
-
             startScrollRaf();
         }, { passive: false });
 
@@ -2714,7 +4381,6 @@
                 0,
                 maxY
             );
-
             startScrollRaf();
         }, { passive: false });
 
@@ -2730,11 +4396,13 @@
             c.width = 256; c.height = 256;
             const ctx = c.getContext('2d');
 
-            const g = ctx.createRadialGradient(128, 128, 2, 128, 128, 120);
-            g.addColorStop(0.00, 'rgba(255, 214, 140, 1.0)');  // warm core
-            g.addColorStop(0.18, 'rgba(255, 170, 60, 0.95)');  // orange
-            g.addColorStop(0.38, 'rgba(255, 120, 30, 0.35)');  // glow falloff
-            g.addColorStop(1.00, 'rgba(255, 120, 30, 0.0)');   // transparent edge
+            // Tighter, more realistic sun disc — bright core, fast falloff
+            const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 100);
+            g.addColorStop(0.00, 'rgba(255, 245, 220, 1.0)');  // bright warm-white core
+            g.addColorStop(0.08, 'rgba(255, 225, 170, 0.9)');  // warm edge of disc
+            g.addColorStop(0.20, 'rgba(255, 190, 100, 0.35)'); // corona
+            g.addColorStop(0.50, 'rgba(255, 160, 80, 0.08)');  // faint glow
+            g.addColorStop(1.00, 'rgba(255, 140, 60, 0.0)');   // transparent
 
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, 256, 256);
@@ -2753,24 +4421,21 @@
                 depthWrite: false,
                 depthTest: false,
                 blending: THREE.AdditiveBlending,
-                opacity: 0.95
+                opacity: SCENE_CONFIG.sunSpriteOpacity
             });
 
             const sprite = new THREE.Sprite(mat);
-            // Position the sun sprite far away in the sun direction
-            sprite.position.copy(sunDirVec3).multiplyScalar(2500);
-            sprite.scale.setScalar(400);
+            sprite.position.copy(sunDirVec3).multiplyScalar(SCENE_CONFIG.sunSpriteDistance);
+            sprite.scale.setScalar(SCENE_CONFIG.sunSpriteScale);
             return sprite;
         }
 
 
         function init() {
             scene = new THREE.Scene();
-            // 🌫️ Warm atmospheric haze
-            scene.fog = new THREE.FogExp2(0xd96a1a, 0.00022);
-
-
-            createCloudLayers();
+            // 🌫️ Subtle atmospheric haze (blue-grey, NOT orange — keeps scene readable)
+            scene.fog = new THREE.FogExp2(SCENE_CONFIG.fogColor, SCENE_CONFIG.fogDensity);
+            ensureWorldGroups();
 
 
             // 1) Camera FIRST
@@ -2779,35 +4444,50 @@
                 baseFov,
                 window.innerWidth / window.innerHeight,
                 1,        // ✅ raise near plane
-                3500      // ✅ reduce far plane
+                2800      // far plane kept tighter to reduce unnecessary fill cost
             );
 
 
-            const startPos = State.isMobile ? new THREE.Vector3(0, 200, 500) : new THREE.Vector3(0, 150, 400);
+            const startPos = samplePathPoint(getCameraPath(), 0);
+            const startLook = samplePathPoint(getLookAtPath(), 0);
             camera.position.copy(startPos);
             cameraPos.copy(camera.position);
-            cameraTarget.set(0, 100, -300);
+            cameraTarget.copy(startLook);
             camera.userData.baseFov = baseFov;
+            createCloudLayers();
+            if (cloudManager) {
+                applyCloudCurtainState('HOME_IDLE');
+                // Ensure HOME curtain is visible on the very first rendered frame.
+                cloudManager.update({
+                    deltaSeconds: 0.016,
+                    elapsedSeconds: 0,
+                    progress: 0,
+                    progressVelocity: 0,
+                    streamReadiness: 0
+                });
+            }
 
             // 2) Renderer SECOND
             const quality = getQualitySettings();
             renderer = new THREE.WebGLRenderer({
                 antialias: State.qualityTier === 'HIGH', // Only antialias on HIGH
                 alpha: true,
-                powerPreference: 'high-performance'
+                powerPreference: 'high-performance',
+                preserveDrawingBuffer: false
             });
 
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.dprCap));
+            State.currentDpr = Math.min(window.devicePixelRatio, quality.dprCap, MAX_RENDER_DPR);
+            renderer.setPixelRatio(State.currentDpr);
 
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            // 🎥 Cinematic golden-hour exposure
-            renderer.toneMappingExposure = 0.95; // brighter golden hour
+            renderer.toneMapping = State.qualityTier === 'LOW' ? SCENE_CONFIG.toneMappingLow : SCENE_CONFIG.toneMapping;
+            renderer.toneMappingExposure = State.qualityTier === 'LOW' ? SCENE_CONFIG.exposureLow : SCENE_CONFIG.exposure;
 
 
 
             renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.physicallyCorrectLights = true;
+            // r160: physically correct lights is the default; use useLegacyLights for LOW tier
+            renderer.useLegacyLights = (State.qualityTier === 'LOW');
 
             renderer.shadowMap.enabled = false; // DISABLED: Shadows too expensive for MacBook Air
             // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -2853,15 +4533,18 @@
             }
 
             // HDRI Environment (only on HIGH to save GPU/RAM)
-            if (State.qualityTier !== 'LOW') {
-                const hdriRes = (State.qualityTier === 'HIGH') ? '1k' : '512'; // ✅ lighter on MEDIUM
+            // Polyhaven only serves 1k/2k/4k/8k — no 512 variant exists
+            if (State.qualityTier === 'HIGH') {
+                const hdriUrl = 'https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/hamburg_hbf_1k.hdr';
 
                 new RGBELoader()
-                    .setPath(`https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/${hdriRes}/`)
-                    .load('hamburg_hbf_1k.hdr', (texture) => {
+                    .load(hdriUrl, (texture) => {
                         texture.mapping = THREE.EquirectangularReflectionMapping;
                         scene.environment = texture;
                         scene.background = null;
+                        console.log('✅ HDRI environment loaded');
+                    }, undefined, (err) => {
+                        console.warn('⚠️ HDRI load failed, scene will use sky + lights only:', err?.message || err);
                     });
             }
 
@@ -2875,56 +4558,71 @@
             const sun = new THREE.Vector3();
             const uniforms = sky.material.uniforms;
 
-            // More “evening” look (warm, bright horizon)
-            uniforms['turbidity'].value = 10.0;
-            uniforms['rayleigh'].value = 1.2;
-            uniforms['mieCoefficient'].value = 0.006;
-            uniforms['mieDirectionalG'].value = 0.88;
+            // Clean golden-hour sky (lower turbidity = clearer, less muddy)
+            uniforms['turbidity'].value = SCENE_CONFIG.skyTurbidity;
+            uniforms['rayleigh'].value = SCENE_CONFIG.skyRayleigh;
+            uniforms['mieCoefficient'].value = SCENE_CONFIG.skyMieCoefficient;
+            uniforms['mieDirectionalG'].value = SCENE_CONFIG.skyMieDirectionalG;
 
-            // TRUE GOLDEN HOUR
-            const elevation = 6.0;   // a bit higher so sun is visible
-            const azimuth = 245;
+            // Golden hour sun position
+            const elevation = SCENE_CONFIG.sunElevation;
+            const azimuth = SCENE_CONFIG.sunAzimuth;
 
             const phi = THREE.MathUtils.degToRad(90 - elevation);
             const theta = THREE.MathUtils.degToRad(azimuth);
             sun.setFromSphericalCoords(1, phi, theta);
 
-            // ✅ IMPORTANT: Use the REAL sun position so Sky shows the sun highlight
             uniforms['sunPosition'].value.copy(sun);
 
-            // Sun directional light
-            const sunLight = new THREE.DirectionalLight(0xffb15a, 2.2);
-            sunLight.color.convertSRGBToLinear();
+            // Sun directional light — warm white, not deep orange
+            const sunLight = new THREE.DirectionalLight(SCENE_CONFIG.sunLightColor, SCENE_CONFIG.sunLightIntensity);
             sunLight.castShadow = (State.qualityTier !== 'LOW');
             sunLight.position.copy(sun).multiplyScalar(800);
             scene.add(sunLight);
 
-            // ✅ Add a visible sun disc (your sprite helper) so users SEE the sun
+            // Sun disc sprite — controlled size, not a blown-out blob
             if (sunSprite) scene.remove(sunSprite);
             sunSprite = createSunSprite(sun);
-            sunSprite.material.opacity = 0.95;
+            sunSprite.material.opacity = SCENE_CONFIG.sunSpriteOpacity;
             scene.add(sunSprite);
 
-
-
-
-            // 🌤️ Evening ambient bounce
+            // Hemisphere fill — warm sky / cool-blue ground (lifts shadows, adds depth)
+            const hemiIntensity = State.qualityTier === 'LOW' ? SCENE_CONFIG.hemiIntensityLow : SCENE_CONFIG.hemiIntensity;
             const fillLight = new THREE.HemisphereLight(
-                0xff9b42,   // orange sky bounce
-                0x1a0c05,   // dark brown ground
-                0.75
+                SCENE_CONFIG.hemiSkyColor,
+                SCENE_CONFIG.hemiGroundColor,
+                hemiIntensity
             );
-
-
-
             scene.add(fillLight);
+
+            // Ambient fill — prevents black silhouettes (critical for LOW tier without env map)
+            const ambIntensity = State.qualityTier === 'LOW' ? SCENE_CONFIG.ambientIntensityLow : SCENE_CONFIG.ambientIntensity;
+            const ambientLight = new THREE.AmbientLight(SCENE_CONFIG.ambientColor, ambIntensity);
+            scene.add(ambientLight);
             // Ground (realistic terrain with grass and river)
             groundMesh = createGround();
             // Note: createGround() now adds to scene internally, no need to add again
 
             // Scene assets
             createRealisticEiffelTower();
+            createHeroForegroundSet();
             createCity();
+            createTrees();
+            createMountains();
+
+            // HOME should never expose unloaded/backfill chunks.
+            setBackgroundVisibility(false);
+            bgRevealLocked = true;
+            bgGateState.assetsLoaded = modelLoadingState.ready;
+            bgGateState.compiled = false;
+            bgGateState.ready = false;
+            bgGateState.revealDeadlineMs = 0;
+            bgGateState.timedOut = false;
+
+            // Warm streamed stages near the initial camera corridor before interaction starts.
+            prewarmStreamingAtHome();
+            enforceMeshCulling(scene);
+            logStreamingDebug('post-build');
             createDataSection();
             createSkillsSection();
             createScooter();
@@ -2954,6 +4652,13 @@
             }
         });
 
+        // ✅ Track user input for idle detection
+        function markActive() { State.lastInputTime = performance.now(); }
+        window.addEventListener('wheel', markActive, { passive: true });
+        window.addEventListener('touchstart', markActive, { passive: true });
+        window.addEventListener('touchmove', markActive, { passive: true });
+        window.addEventListener('keydown', markActive, { passive: true });
+
 
 
         // Hover effects ONLY for data spheres (not buildings)
@@ -2977,9 +4682,7 @@
 
 
         function applyQualityTier(newTier) {
-            // ✅ don't allow auto changes if forced
             if (State.userForcedTier) return;
-
             if (!newTier || newTier === State.qualityTier) return;
 
             State.qualityTier = newTier;
@@ -2987,28 +4690,152 @@
 
             console.log(`⚙️ Switching quality tier → ${newTier}`);
 
-            if (renderer) renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.dprCap));
+            State.currentDpr = Math.min(window.devicePixelRatio, q.dprCap, MAX_RENDER_DPR);
+            if (renderer) renderer.setPixelRatio(State.currentDpr);
             if (renderer) renderer.shadowMap.enabled = newTier !== 'LOW';
             if (bloomPass) bloomPass.enabled = (q.enableBloom && !State.isMobile && newTier !== 'LOW');
+
+            // Swap tone mapping for cheaper rendering at LOW
+            if (renderer) {
+                renderer.toneMapping = newTier === 'LOW' ? SCENE_CONFIG.toneMappingLow : SCENE_CONFIG.toneMapping;
+                renderer.toneMappingExposure = newTier === 'LOW' ? SCENE_CONFIG.exposureLow : SCENE_CONFIG.exposure;
+                renderer.useLegacyLights = (newTier === 'LOW');
+            }
+
+            // Rebuild materials for new tier (swap transmission → standard at LOW)
+            const oldMaterials = MATERIALS;
+            MATERIALS = createMaterials(newTier);
+
+            // Swap river mesh material in terrain group
+            if (groups.terrain) {
+                groups.terrain.traverse((child) => {
+                    if (child.isMesh && child.name === 'river') {
+                        if (child.material) child.material.dispose();
+                        child.material = MATERIALS.river;
+                    }
+                });
+            }
+
+            // Hide excess buildings beyond new buildingCount
+            if (cityInstances && cityInstances.length > q.buildingCount) {
+                for (let i = q.buildingCount; i < cityInstances.length; i++) {
+                    cityInstances[i].visible = false;
+                }
+            }
+
+            // Refresh streaming bands so thresholds match the active tier.
+            const cityBands = getStreamingBands('city');
+            for (let i = 0; i < cityLods.length; i++) {
+                const d = cityLods[i].userData?.stream;
+                if (d) d.bands = cityBands;
+            }
+            for (let i = 0; i < cityZones.length; i++) {
+                cityZones[i].maxFarStart = cityBands.farStart;
+            }
+
+            const treeBands = getStreamingBands('tree');
+            for (let i = 0; i < treeLods.length; i++) {
+                const d = treeLods[i].userData?.stream;
+                if (d) d.bands = treeBands;
+            }
+            for (let i = 0; i < treeZones.length; i++) {
+                treeZones[i].maxFarStart = treeBands.farStart;
+            }
+            for (let i = 0; i < treeProxyZones.length; i++) {
+                treeProxyZones[i].farStart = treeBands.farStart;
+            }
+            if (cloudManager) cloudManager.setQualityTier(newTier);
+
+            // Dispose old transmission materials
+            if (oldMaterials) {
+                ['glass', 'cheapGlass', 'river'].forEach(key => {
+                    if (oldMaterials[key] && oldMaterials[key] !== MATERIALS[key]) {
+                        oldMaterials[key].dispose();
+                    }
+                });
+            }
+
+            logStreamingDebug('tier-switch');
         }
 
 
         function monitorFpsAndAutoDowngrade() {
-            // 🔒 Disabled — HIGH quality locked intentionally
-            return;
+            const now = performance.now();
+            if (now - State.fpsLastSampleTs < 2000) return; // sample every 2s
+            State.fpsLastSampleTs = now;
+
+            // Calculate median FPS from recent samples
+            State.fpsSamples.push(State.fps);
+            if (State.fpsSamples.length > 5) State.fpsSamples.shift();
+
+            const sorted = [...State.fpsSamples].sort((a, b) => a - b);
+            const median = sorted[Math.floor(sorted.length / 2)];
+
+            // Adaptive DPR: scale resolution based on FPS headroom
+            const quality = getQualitySettings();
+            const maxDpr = Math.min(window.devicePixelRatio, quality.dprCap, MAX_RENDER_DPR);
+            if (renderer && median > 0) {
+                if (median > 52 && State.currentDpr < maxDpr) {
+                    // FPS headroom — raise DPR for clarity
+                    State.currentDpr = Math.min(State.currentDpr + 0.04, maxDpr);
+                    renderer.setPixelRatio(State.currentDpr);
+                } else if (median < 35 && State.currentDpr > State.dprFloor) {
+                    // FPS struggling — lower DPR to recover
+                    State.currentDpr = Math.max(State.currentDpr - 0.1, State.dprFloor);
+                    renderer.setPixelRatio(State.currentDpr);
+                    console.log(`📉 Adaptive DPR: lowered to ${State.currentDpr.toFixed(2)} (FPS median: ${median.toFixed(0)})`);
+                }
+            }
+
+            if (median < 24) {
+                State.lowFpsStrikes++;
+            } else {
+                State.lowFpsStrikes = Math.max(0, State.lowFpsStrikes - 1);
+            }
+
+            // 3 consecutive low-FPS samples → downgrade one tier
+            if (State.lowFpsStrikes >= 3) {
+                State.lowFpsStrikes = 0;
+                State.fpsSamples.length = 0;
+                const tiers = ['LOW', 'MEDIUM', 'HIGH'];
+                const idx = tiers.indexOf(State.qualityTier);
+                if (idx > 0) {
+                    console.log(`⚠️ FPS too low (median ${median.toFixed(0)}), downgrading from ${State.qualityTier} to ${tiers[idx - 1]}`);
+                    applyQualityTier(tiers[idx - 1]);
+                }
+            }
         }
 
 
 
-        function animate(currentTime) {
-            requestAnimationFrame(animate);
+        let _idleRAF = null;
+        function scheduleNextFrame() {
+            const idleThreshold = 2000; // 2 seconds of no input
+            const timeSinceInput = performance.now() - State.lastInputTime;
+            const wasIdle = State.isIdle;
+            State.isIdle = timeSinceInput > idleThreshold;
+            const sceneStatic =
+                Math.abs(State.targetProgress - State.progress) < 0.00035 &&
+                sceneFlow.state !== SceneState.TRANSITION;
 
-            // ✅ pause heavy updates when tab is hidden
-            if (isPaused) {
-                if (composer) composer.render();
-                else renderer.render(scene, camera);
-                return;
+            if (State.isIdle || sceneStatic) {
+                // Lower cadence when static to cut GPU load.
+                const delay = sceneStatic ? 130 : 100;
+                _idleRAF = setTimeout(() => requestAnimationFrame(animate), delay);
+            } else {
+                if (wasIdle && !State.isIdle) {
+                    // Resuming from idle — reset frame timing to avoid large delta
+                    State.lastFrameTime = performance.now();
+                }
+                requestAnimationFrame(animate);
             }
+        }
+
+        function animate(currentTime) {
+            scheduleNextFrame();
+
+            // ✅ skip rendering entirely when tab is hidden — no one can see it
+            if (isPaused) return;
 
             // DEBUG: Log performance every 60 frames (remove in production)
             if (Math.floor(currentTime / 1000) % 5 === 0 && Math.random() < 0.01) {
@@ -3041,6 +4868,10 @@
             }
             State.lastFrameTime = currentTime - (deltaTime % State.frameInterval);
 
+            // ✅ Track FPS for auto-downgrade
+            if (deltaTime > 0) State.fps = 1000 / deltaTime;
+            monitorFpsAndAutoDowngrade();
+
             // Frame-rate independent easing (guard against NaN)
             const safeDelta = isNaN(deltaTime) || deltaTime <= 0 ? 16.67 : deltaTime;
             const frameFactor = Math.min(safeDelta / 16.67, 2); // Normalize to ~60fps, cap at 2x
@@ -3063,47 +4894,132 @@
                 const cameraPath = getCameraPath();
                 const lookAtPath = getLookAtPath();
 
-                const targetPos = cameraPath.getPoint(t);
-                const targetLookAt = lookAtPath.getPoint(t);
+                const targetPos = samplePathPoint(cameraPath, t);
+                const targetLookAt = samplePathPoint(lookAtPath, t);
+                const lookAhead = samplePathPoint(cameraPath, t + CAMERA_PATH_TUNING.lookAheadT);
+                targetLookAt.lerp(lookAhead, CAMERA_PATH_TUNING.lookAtForwardBlend);
 
-                // Frame-rate independent lerping
-                const lerpFactor = 0.025 * frameFactor;
-                cameraPos.lerp(targetPos, Math.min(lerpFactor, 0.15));
-                // Prevent harsh pitch flips (clamp lookAt height)
-                cameraTarget.y = THREE.MathUtils.clamp(cameraTarget.y, 80, 130);
+                // Frame-rate independent lerping (buttery smooth)
+                const lerpFactor = SCENE_CONFIG.cameraDamping * frameFactor;
+                cameraPos.lerp(targetPos, Math.min(lerpFactor, SCENE_CONFIG.cameraDampingMax));
+                cameraTarget.lerp(targetLookAt, Math.min(lerpFactor, SCENE_CONFIG.cameraDampingMax));
 
+                // Keep camera outside buildings and above terrain for cleaner cinematic paths.
+                applyCameraCollisionSafety(cameraPos);
+
+                // Clamp lookAt Y range
+                cameraTarget.y = THREE.MathUtils.clamp(
+                    cameraTarget.y,
+                    SCENE_CONFIG.lookAtYClampMin,
+                    SCENE_CONFIG.lookAtYClampMax
+                );
 
                 camera.position.copy(cameraPos);
-                // Smooth mouse to avoid twitchy camera
-                mouseSmooth.lerp(mouse, MOUSE_SMOOTHING * frameFactor);
+                camera.lookAt(cameraTarget);
+                const prevProgress = State.lastProgress ?? State.progress;
+                const progressVelocity = State.progress - prevProgress;
+                updateSceneStateMachine(nowMs, progressVelocity);
+                applyCloudCurtainState(cloudCurtainState);
 
+                const cloudState = cloudManager ? cloudManager.update({
+                    deltaSeconds: safeDelta / 1000,
+                    elapsedSeconds: elapsed,
+                    progress: State.progress,
+                    progressVelocity,
+                    streamReadiness: State.streamingReadiness || 0
+                }) : null;
 
-                // Desktop parallax only (reduced sensitivity for smoother feel)
-                if (!State.isMobile) {
-                    const parallaxX = mouseSmooth.x * 3.0;
-                    const parallaxY = mouseSmooth.y * 2.0;
-
-
-                    camera.position.x = cameraPos.x + parallaxX;
-                    camera.position.y = cameraPos.y + parallaxY;
-                    camera.position.z = cameraPos.z;
+                if (scene.fog) {
+                    let targetFogDensity = SCENE_CONFIG.fogDensity;
+                    if (cloudCurtainState === 'HOME_IDLE') {
+                        targetFogDensity = HOME_FOG_DENSITY;
+                    } else if (cloudCurtainState === 'TRANSITION_MASK') {
+                        targetFogDensity = TRANSITION_FOG_DENSITY;
+                    } else if (cloudCurtainState === 'TRANSITION_REVEAL') {
+                        targetFogDensity = REVEAL_FOG_DENSITY;
+                    }
+                    if (cloudState?.maskStrength !== undefined) {
+                        const fadeOutFactor = THREE.MathUtils.lerp(0.78, 1.0, cloudState.maskStrength);
+                        targetFogDensity *= fadeOutFactor;
+                    }
+                    scene.fog.density += (targetFogDensity - scene.fog.density) * Math.min(FOG_TRANSITION_DAMP * frameFactor, 1);
                 }
 
-                camera.lookAt(cameraTarget);
+                const worldStreamingState = worldStreamingManager ? worldStreamingManager.update({
+                    progress: State.progress,
+                    cloudState,
+                    streamReadiness: State.streamingReadiness || 0
+                }) : null;
+                const streamVisibilityGate = worldStreamingState?.streamVisibilityGate || null;
 
-                // Force LOD updates - throttled to every other frame on LOW quality
-                if (cityGroup) {
+                if (debugHud && nowMs - debugHudLastMs > 120) {
+                    debugHudLastMs = nowMs;
+                    const fogDensity = scene?.fog?.density || 0;
+                    const cloudMask = cloudState?.maskStrength || 0;
+                    const cloudNear = cloudState?.nearOpacity || 0;
+                    const cloudFar = cloudState?.farOpacity || 0;
+                    debugHud.textContent =
+                        `progress: ${State.progress.toFixed(3)}\\n` +
+                        `sceneState: ${sceneFlow.state}\\n` +
+                        `curtain: ${cloudCurtainState}\\n` +
+                        `cloudMask: ${cloudMask.toFixed(3)}\\n` +
+                        `cloudNear/Far: ${cloudNear.toFixed(3)} / ${cloudFar.toFixed(3)}\\n` +
+                        `fogDensity: ${fogDensity.toFixed(5)}\\n` +
+                        `bgReady/timeout/visible: ${bgGateState.ready ? 1 : 0} / ${bgGateState.timedOut ? 1 : 0} / ${(groups.bgRoot?.visible) ? 1 : 0}\\n` +
+                        `modelsLoaded: ${modelLoadingState.loadedModels}/${modelLoadingState.totalModels}`;
+                }
+
+                // Staged city/tree streaming update with hysteresis.
+                const hasCityZones = cityZones.length > 0 && groups.city && groups.city.visible;
+                const hasTreeZones = treeZones.length > 0 && groups.trees && groups.trees.visible;
+                const hasTreeProxyZones = treeProxyZones.length > 0 && groups.trees && groups.trees.visible;
+
+                if (hasCityZones || hasTreeZones || hasTreeProxyZones) {
                     const low = State.qualityTier === 'LOW';
-                    const shouldUpdate = !low || (Math.floor(currentTime / 80) % 2 === 0); // ✅ slower on LOW
-                    if (shouldUpdate) {
-                        cityGroup.traverse((o) => {
-                            if (o && o.isLOD) o.update(camera);
-                        });
+                    const shouldPrioritizeStreaming = !!worldStreamingState?.prioritizeStreaming;
+                    const shouldUpdateStreams = shouldPrioritizeStreaming || !low || (Math.floor(currentTime / 95) % 2 === 0);
+
+                    if (shouldUpdateStreams) {
+                        _projMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+                        _frustum.setFromProjectionMatrix(_projMatrix);
+
+                        if (hasCityZones) updateStreamZones(cityZones, camera, nowMs, streamVisibilityGate);
+                        if (hasTreeZones) updateStreamZones(treeZones, camera, nowMs, streamVisibilityGate);
+
+                        if (hasTreeProxyZones) {
+                            const treeBands = getStreamingBands('tree');
+                            const farSq = treeBands.farStart * treeBands.farStart;
+                            const hysteresisScale = 1 + (treeBands.hysteresis || 0.10);
+                            const proxyScale = streamVisibilityGate?.enabled ? (streamVisibilityGate.treeProxyScale || 1) : 1;
+
+                            for (let i = 0; i < treeProxyZones.length; i++) {
+                                const zone = treeProxyZones[i];
+                                _sphere.set(zone.center, zone.radius + treeBands.farStart * 0.25);
+                                const frustumVisible = _frustum.intersectsSphere(_sphere);
+
+                                if (!frustumVisible) {
+                                    zone.group.visible = false;
+                                    zone.visibleLastFrame = false;
+                                    continue;
+                                }
+
+                                const dx = zone.center.x - camera.position.x;
+                                const dz = zone.center.z - camera.position.z;
+                                const d2 = dx * dx + dz * dz;
+                                const baseSq = zone.visibleLastFrame ? (farSq * hysteresisScale * hysteresisScale) : farSq;
+                                const maxSq = baseSq * proxyScale * proxyScale;
+                                zone.group.visible = d2 <= maxSq;
+                                zone.visibleLastFrame = zone.group.visible;
+                            }
+                        }
                     }
                 }
 
+                updateStreamTransitions(nowMs);
+                State.streamingReadiness = computeStreamingReadiness(nowMs);
 
-                const velocity = Math.abs(State.progress - (State.lastProgress || 0));
+
+                const velocity = Math.abs(progressVelocity);
                 State.lastProgress = State.progress;
 
                 const baseFov = camera.userData.baseFov || 55;
@@ -3165,7 +5081,7 @@
 
                 // Update renderer - FORCE DPR to 1.0 on resize for MacBook Air
                 const q = getQualitySettings();
-                const dpr = Math.min(window.devicePixelRatio, q.dprCap, State.qualityTier === 'LOW' ? 1.0 : q.dprCap);
+                const dpr = Math.min(window.devicePixelRatio, q.dprCap, MAX_RENDER_DPR, State.qualityTier === 'LOW' ? 1.0 : q.dprCap);
                 renderer.setPixelRatio(dpr);
                 renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -3202,6 +5118,8 @@
             try {
                 await loadAllModels();
                 init();
+                bgGateState.assetsLoaded = modelLoadingState.ready;
+                await compileBackgroundAssets();
                 injectContent();
                 sceneReady = true;
                 console.log('✨ Scene ready with normalized models');
@@ -3226,7 +5144,36 @@
 
             State.progress = 0;
             State.targetProgress = 0;
+            State.lastProgress = 0;
             State.section = 0;
+            State.streamingReadiness = 0;
+            sceneFlow.state = SceneState.BOOT_LOADING;
+            sceneFlow.lastSection = 0;
+            sceneFlow.bootDeadlineMs = performance.now() + SCENE_FLOW_CONFIG.bootTimeoutMs;
+            sceneFlow.transition.active = false;
+            sceneFlow.transition.fromSection = 0;
+            sceneFlow.transition.toSection = 0;
+            sceneFlow.transition.startMs = 0;
+            sceneFlow.transition.deadlineMs = 0;
+            bgRevealLocked = true;
+            setBackgroundVisibility(false);
+            bgGateState.revealDeadlineMs = 0;
+            bgGateState.timedOut = false;
+            cloudCurtainState = 'HOME_IDLE';
+            previousCloudCurtainState = 'OFF';
+            if (cloudManager) cloudManager.resetForLanding();
+            if (worldStreamingManager) worldStreamingManager.reset();
+            prewarmStreamingAtHome();
+            applyCloudCurtainState('HOME_IDLE');
+            if (cloudManager) {
+                cloudManager.update({
+                    deltaSeconds: 0.016,
+                    elapsedSeconds: 0,
+                    progress: 0,
+                    progressVelocity: 0,
+                    streamReadiness: 0
+                });
+            }
 
             State.started = true;
 
